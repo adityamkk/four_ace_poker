@@ -1,13 +1,24 @@
 <template>
-  <!-- <vue-playing-card signature="as" :width="300"></vue-playing-card> -->
-  <img alt="Vue logo" src="./assets/poker.webp">
+<div>
+
+  <img alt="Vue logo" src="./assets/poker.webp"> 
   <h1>GameState</h1>
+
   <h3> Players : {{ displayPlayers(allPlayers) }} </h3>
+
   <h3> Current Player : {{ displayPlayer(allPlayers[currPlayer]) }} </h3> 
-  <h3> Cards : {{ cardsOnBoard }} </h3>
+
+  <h3> Cards</h3>
+  <div v-for="card in cardsOnBoard" :key="card" id="cardsOnBoard">
+    <vue-playing-card :signature="getCard(card)"></vue-playing-card>
+  </div>
+
   <h3> Blinds : {{ minBlind/2 }}/{{ minBlind }} </h3>
+
   <h3> Called Amount : {{ calledAmt }} </h3>
+
   <h3> Pot : {{ potAmt }} </h3>
+
   <h1>Functions</h1>
   <button v-on:click="getGameState">Get GameState</button><br>
   <input type="text" id="pname" name="pname">
@@ -23,21 +34,24 @@
 
   <button v-on:click="endRound">End Round</button><br>
   <button v-on:click="endGame">End Game</button>
+  </div>
 </template>
 
 <script>
-//import Vue from 'vue'
-import axios from 'axios'
+
+import axios from 'axios';
+//import card from './components/PlayingCard.vue';
+
+//import Vue from 'vue';
+// @ts-ignore
 //import VuePlayingCard from 'vue-playing-card';
-//import VueAxios from 'vue-axios'
+//const VuePlayingCard = require('vue-playing-card');
  
-//Vue.use(VueAxios, axios)
+//Vue.use(VuePlayingCard);
+
 
 export default {
   name: 'App',
-  components: {
-      //VuePlayingCard 
-  },
   data: () => ({
     isLoading: false,
     isError: false,
@@ -64,6 +78,14 @@ export default {
         listOfPlayers += '), ';
       }
       return listOfPlayers;
+    },
+    displayCardsOnBoard (cardsOnBoard) {
+      cardsOnBoard.forEach(function(card) {
+        document.getElementById("cardsOnBoard").innerHTML += `<vue-playing-card signature="${card.rank}${card.suite}"></vue-playing-card>`;
+      });
+    },
+    getCard (card) {
+      return card.rank.toLowerCase() + card.suite.toLowerCase();
     },
     async getGameState () {
       let vm = this;
@@ -214,6 +236,7 @@ export default {
     }
   }
 }
+
 </script>
 
 <style>
@@ -226,3 +249,4 @@ export default {
   margin-top: 60px;
 }
 </style>
+<style src="./assets/cards.css"></style>
