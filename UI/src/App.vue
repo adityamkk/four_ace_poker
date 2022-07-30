@@ -1,49 +1,46 @@
 <template>
 <div>
-  <h1>Poker Game Tester</h1>
-  <!--<img alt="Vue logo" src="./assets/poker.webp"> -->
 
-  <h2>GameState</h2>
-
-  <h3> Players :</h3>
   <div id="playerBox">
-  <div v-for="player in allPlayers" :key="player" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
-    <img alt="Icon" src="./assets/person-outline.svg" width="40px" class="userIcon">
-    <h2 id="playerName">{{player.name}}</h2>
-    <h2 id="playerAmt">${{player.amt}}</h2>
-    <div v-for="card in player.cards" :key="card" id="playerCards" style="display: inline-block">
-      <vue-playing-card :signature="getCard(card)" width="100"></vue-playing-card>
-    </div>
-  </div>
-  </div>
-
-  <h3> Cards</h3>
-  <div id="cardsOnBoard">
+    <div v-for="player in allPlayers" :key="player" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
+      <div style="display:inline-flex">
+        <img alt="Icon" src="./assets/rhino.png" width="100px" height="100px" class="userIcon">
+        <div>
+          <h2 id="playerName">{{player.name}}</h2>
+          <h2 id="playerAmt">${{player.amt}}</h2>
+        </div>
+      </div> <br>
+      <div v-for="card in player.cards" :key="card" id="playerCards" style="display: inline-block">
+        <vue-playing-card :signature="getCard(card)" width="100"></vue-playing-card>
+      </div><br>
+      <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
+      <button v-on:click="raise" id="raise"> Raise </button>
+      <input type="text" id="raiseamt" name="raiseamt" size="2px">
+      <button v-on:click="fold" id="fold"> Fold </button>
+    </div><br>
+    <div style="display:inline">
+      <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
+      <h2 id="potAmt">${{potAmt}}</h2>
+    </div><br>
+    <div style="display:inline">
+      <h2>Blinds: {{ minBlind/2 }}/{{ minBlind }}</h2>
+      <h2>Current Bet: {{ calledAmt }}</h2>
+    </div><br>
     <div v-for="card in cardsOnBoard" :key="card" style="display: inline-block; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
     </div>
+
+    <h2>Functions</h2>
+    <button v-on:click="getGameState">Get GameState</button><br>
+    <input type="text" id="pname" name="pname">
+    <button v-on:click="addPlayer">Add Player</button><br>
+    <input type="text" id="rname" name="rname">
+    <button v-on:click="removePlayer">Remove Player</button><br>
+    <button v-on:click="beginRound">Begin Round</button><br>
+
+    <button v-on:click="endRound">End Round</button><br>
+    <button v-on:click="endGame">End Game</button>
   </div>
-  
-  <h3> Blinds : {{ minBlind/2 }}/{{ minBlind }} </h3>
-  <h3> Pot : {{ potAmt }} </h3>
-  <h3> Called Amount : {{ calledAmt }} </h3>
-  
-
-  <h2>Functions</h2>
-  <button v-on:click="getGameState">Get GameState</button><br>
-  <input type="text" id="pname" name="pname">
-  <button v-on:click="addPlayer">Add Player</button><br>
-  <input type="text" id="rname" name="rname">
-  <button v-on:click="removePlayer">Remove Player</button><br>
-  <button v-on:click="beginRound">Begin Round</button><br>
-  
-  <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
-  <button v-on:click="raise" id="raise"> Raise </button>
-  <input type="text" id="raiseamt" name="raiseamt">
-  <button v-on:click="fold" id="fold"> Fold </button><br>
-
-  <button v-on:click="endRound">End Round</button><br>
-  <button v-on:click="endGame">End Game</button>
 </div>
 </template>
 
@@ -259,6 +256,8 @@ export default {
 body {
   text-align: center;
   font-family: 'Montserrat', sans-serif;
+  padding:0;
+  margin:0;
 }
 
 button {
@@ -335,10 +334,13 @@ h3:hover {
   border-radius: 25px;
 }
 
+#potAmt {
+  padding-top:0px;
+  padding-bottom:50px;
+}
+
 #playerBox {
   background-image: url("./assets/felt_table.jpg");
-  padding: 10px;
-  border-radius: 25px;
 }
 
 #playerList {
@@ -370,22 +372,57 @@ h3:hover {
 }
 
 #call {
-  background-color: #90EE90;
-  border-color: #559900;
+  color:#ffffff;
+  background-color: #48C9B0;
+  border-color: #48C9B0;
+  transition: 0.5s;
+}
+
+#call:hover {
+  background-color: #1ABC9C;
+  border-color: #1ABC9C;
+  transition: 0.5s;
 }
 
 #raise {
-  background-color: #aa0000;
-  border-color: #880000;
+  color:#ffffff;
+  background-color: #EC7063;
+  border-color: #EC7063;
+  transition: 0.5s;
+}
+
+#raise:hover {
+  background-color: #E74C3C;
+  border-color: #E74C3C;
+  transition: 0.5s;
+}
+
+#raiseamt {
+  background-color: #F5B7B1;
+  border-color: #F5B7B1;
+  transition: 0.5s;
+}
+
+#raiseamt:hover {
+  background-color: #F1948A;
+  border-color: #F1948A;
+  transition: 0.5s;
 }
 
 #fold {
-  background-color: #008080;
-  border-color: #007a7a;
+  color:#ffffff;
+  background-color: #7FB3D5;
+  border-color: #7FB3D5;
+  transition: 0.5s;
+}
+
+#fold:hover {
+  background-color: #5499C7;
+  border-color: #5499C7;
+  transition: 0.5s;
 }
 
 .userIcon {
-  background-color:#1ea1a1;
   border-radius: 100px;
 }
 </style>

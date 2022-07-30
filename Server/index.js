@@ -293,6 +293,7 @@ function startNewRound() {
                 break;
         case 4: GameState.currRound = 0;
                 console.log(`Last round over`);
+                GameState.endRound();
     }
 }
 
@@ -602,7 +603,24 @@ let GameState = {
     calledAmt : 2, //This is the AMOUNT deposited in the pot in the last raise
     lastRaise : 2, //This is the POSITION of the player that made the last raise
     winnerPos: 0, //Position of the winner of the previous round
-    potAmt : 0 //Amount in the pot
+    potAmt : 0, //Amount in the pot
+
+    endRound : function() {
+        findWinner();
+        for(var i = 0; i < GameState.allPlayers.length; i++) {
+            GameState.allPlayers[i].cards = [];
+        }
+        gameDeck = new Deck();
+        GameState.allPlayers.at(GameState.winnerPos).amt += GameState.potAmt;
+        GameState.potAmt = 0;
+        GameState.cardsOnBoard = [];
+        GameState.calledAmt = 2;
+        GameState.currRound = 0;
+        rotateDealerPos();
+        resetFoldStatus();
+        console.log('Round Has Ended, Next Round Starting');
+        console.log('---------------------------------------------------------------------------------');
+    },
 };
 
 //gameDeck Object
@@ -724,20 +742,7 @@ const server = http.createServer((req, res) => {
         
         //Ends a round and prepares for the next round
         case '/endRound' :
-            findWinner();
-            for(var i = 0; i < GameState.allPlayers.length; i++) {
-                GameState.allPlayers[i].cards = [];
-            }
-            gameDeck = new Deck();
-            GameState.allPlayers.at(GameState.winnerPos).amt += GameState.potAmt;
-            GameState.potAmt = 0;
-            GameState.cardsOnBoard = [];
-            GameState.calledAmt = 2;
-            GameState.currRound = 0;
-            rotateDealerPos();
-            resetFoldStatus();
-            console.log('Round Has Ended, Next Round Starting');
-            console.log('---------------------------------------------------------------------------------');
+            GameState.endRound();
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
             res.write(JSON.stringify(GameState));  
             res.end();
