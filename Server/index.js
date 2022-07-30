@@ -254,7 +254,10 @@ function fold(player) {
 function updateRoundStatus() {
     console.log('ROUND STATUS');
     let areEqualized = true;
-    const q = GameState.allPlayers[0];
+    let q = {};
+    for(const p of GameState.allPlayers) {
+        if(!p.hasFolded) {q = p;}
+    }
     for(const p of GameState.allPlayers) {
         console.log( `default value:  ${q.currPaidAmt} , currPaidAmt:  ${p.currPaidAmt}`);
         if(!p.hasFolded && (p.currPaidAmt < 0 || q.currPaidAmt != p.currPaidAmt)) {
@@ -269,7 +272,8 @@ function updateRoundStatus() {
 
 //Prepares for the start of a new round, recalibrates current player, and updates the type of round
 function startNewRound() {
-    GameState.currPlayer = recalPos(bigBlindPos()+1);
+    GameState.currPlayer = recalPos(bigBlindPos());
+    rotateCurrPos();
     console.log(`Current Position: ${GameState.currPlayer}`);
     GameState.calledAmt = 0; GameState.lastRaise = 0;
     for(const p of GameState.allPlayers) {
