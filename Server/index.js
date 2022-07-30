@@ -329,7 +329,7 @@ function findWinner() {
         if(!player.hasFolded && !foundWinner) {
             foundWinner = true;
             GameState.winnerPos = i;
-            console.log(`${player.name} won the round with a ${player.handType()}! Next round starting`);
+            console.log(`${player.name} won the round with a ${player.handType()}!`);
             declareWinner(player);
             //TODO: Needs to force an end round activation
             return player;
