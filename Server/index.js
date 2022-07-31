@@ -14,9 +14,12 @@ const port = 3000;
 //Player Class
 class Player {
 
+    static counter = 0;
     //Defines a player's name, amount owned, amount paid, cards, and whether they have folded or not.
     constructor(name, amt) {
         this.name = name;
+        this.id = Player.counter;
+        Player.counter++;
         this.amt = amt;
         this.currPaidAmt = -1;
         this.cards = [];
@@ -79,8 +82,11 @@ class Player {
 //Card Class
 class Card {
 
+    static counter = 0;
     //Defines the card's rank and suite (string)
     constructor(rank, suite) {
+        this.id = Card.counter;
+        Card.counter++;
         this.rank = rank;
         this.suite = suite;
     }
@@ -728,24 +734,6 @@ const server = http.createServer((req, res) => {
             res.write(JSON.stringify(GameState));  
             res.end();
             break;
-        
-        //Updates the amount for a specific player (not used)
-        /*
-        case '/updateAmt' :
-            const updName = url.searchParams.get('name');
-            const updAmt = (url.searchParams.get('amtDiff') != null) ? parseInt(url.searchParams.get('amtDiff')) : 0;
-            for(var i = 0; i < GameState.allPlayers.length; i++) {
-                if(updName === GameState.allPlayers[i].name) {
-                    updateAmt(GameState.allPlayers[i], updAmt);
-                    console.log(`Player \"${updName}\" amount updated by ${updAmt}`);
-                    i=GameState.allPlayers.length;
-                }
-            }
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(GameState));  
-            res.end();
-            break;
-        */
 
         //Begins a round
         case '/beginRound' :

@@ -2,15 +2,15 @@
 <div>
 
   <div id="playerBox">
-    <div v-for="player in allPlayers" :key="player" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
+    <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
       <div style="display:inline-flex">
-        <img alt="Icon" src="./assets/rhino.png" width="100px" height="100px" class="userIcon">
+        <img alt="Icon" :src="assignIcon(player)" width="100px" height="100px" class="userIcon" :id="player.id">
         <div>
           <h2 id="playerName">{{player.name}}</h2>
           <h2 id="playerAmt">${{player.amt}}</h2>
         </div>
       </div> <br>
-      <div v-for="card in player.cards" :key="card" id="playerCards" style="display: inline-block">
+      <div v-for="card in player.cards" :key="card.id" id="playerCards" style="display: inline-block">
         <vue-playing-card :signature="getCard(card)" width="100"></vue-playing-card>
       </div><br>
       <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
@@ -26,7 +26,7 @@
       <h2>Blinds: {{ minBlind/2 }}/{{ minBlind }}</h2>
       <h2>Current Bet: {{ calledAmt }}</h2>
     </div><br>
-    <div v-for="card in cardsOnBoard" :key="card" style="display: inline-block; margin:1%">
+    <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
     </div>
 
@@ -90,6 +90,14 @@ export default {
       }
       return false;
     },
+    assignIcon (player) {
+      const vm = this;
+      for(let i = 0; i < vm.allPlayers.length; i++) {
+        if(player == vm.allPlayers.at(i)) {
+          return require('./assets/icon_' + i%10 + '.png');
+        }
+      }
+    },  
     async getGameState () {
       let vm = this;
       axios.get('http://localhost:3000/gamestate')
