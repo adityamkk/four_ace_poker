@@ -25,6 +25,7 @@ class Game {
         this.winnerPos = 0; //Position of the winner of the previous round
         this.potAmt = 0; //Amount in the pot
         this.gameDeck = new Deck(); //Deck of Cards used in game
+        this.message = '';
     }
 
     //Adds a player to the game, with a specifc name and amount
@@ -403,6 +404,7 @@ function startNewRound() {
     switch(findGame().currRound) {
         case 1: for(let i = 0; i < 3; i++) {showCard();}
                 console.log(`3 cards shown (flop)`);
+                findGame().message = '';
                 break;
         case 2: showCard();
                 console.log(`1 card shown (turn)`);
@@ -465,6 +467,7 @@ function findWinner() {
 //Gives the entire amount in the pot to the winning player
 function declareWinner(player) {
     console.log(`${player.name} won the round with a ${player.handType()}!`);
+    findGame().message = `${player.name} won the round with a ${player.handType()}!`;
     updateAmt(player, (findGame().potAmt));
     findGame().allPlayers.forEach(function(player) {
         player.currPaidAmt = -1;
