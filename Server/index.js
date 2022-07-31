@@ -11,6 +11,119 @@ const port = 3000;
 // CLASS DEFINITIONS
 */
 
+//Game Class
+class Game {
+    constructor() {
+        this.allPlayers = []; //Array of all players in the game
+        this.dealerPos = 0; //Position of the dealer in allPlayers
+        this.currPlayer = 0; //Position of the current player in allPlayers
+        this.currRound = 0; //The round number (preflop, flop, turn, river)
+        this.cardsOnBoard = []; //Array of cards located on the board
+        this.minBlind = 2; //Current minimum blind amount
+        this.calledAmt = 2; //This is the AMOUNT deposited in the pot in the last raise
+        this.lastRaise = 2; //This is the POSITION of the player that made the last raise
+        this.winnerPos = 0; //Position of the winner of the previous round
+        this.potAmt = 0; //Amount in the pot
+        this.gameDeck = new Deck(); //Deck of Cards used in game
+    }
+
+    //Adds a player to the game, with a specifc name and amount
+    addPlayer (url) {
+        this.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 0));
+        console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
+    }
+
+    //Removes a player from the game, based on their name
+    removePlayer (url) {
+        const remName = url.searchParams.get('name');
+        for(var i = 0; i < this.allPlayers.length; i++) {
+            if(remName === this.allPlayers[i].name) {
+                this.allPlayers.splice(i,1);
+                console.log(`Player \"${remName}\" removed from allPlayers.`);
+                i = this.allPlayers.length;
+            }
+        }
+    }
+
+    //Begins a round
+    beginRound () {
+        this.gameDeck.shuffle();
+        // TESTING CASES
+        //this.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
+        //
+        //small blind
+        updateAmt(this.allPlayers[smallBlindPos()], ~~(this.minBlind/2)*(-1));
+        this.allPlayers[smallBlindPos()].currPaidAmt = 1;
+        updatePot(~~(this.minBlind/2));
+        //big blind
+        updateAmt(this.allPlayers[bigBlindPos()], this.minBlind*(-1));
+        this.allPlayers[bigBlindPos()].currPaidAmt = 2;
+        updatePot(this.minBlind);
+        //deal cards
+        for(var i = 0; i < this.allPlayers.length; i++) {
+            this.gameDeck.deal(this.allPlayers[i],2);
+        }
+        this.currPlayer = recalPos(bigBlindPos()+1);
+        this.lastRaise = bigBlindPos();
+
+        console.log(`Round has started, ${this.allPlayers.at(this.currPlayer).name} is starting`);
+    }
+
+    //Has the current player do a specific action
+    gameAction (url) {
+        const action = url.searchParams.get('action');
+        const player = this.allPlayers.at(this.currPlayer);
+        console.log(`${action} is used by the player \"${player.name}\"`);
+        switch(action) {
+            case 'call' :
+                call(player);
+                break;
+            case 'raise' :
+                raise(player, parseInt(url.searchParams.get('amt')));
+                break;
+            case 'fold' :
+                fold(player);
+                break;
+            default:
+                console.log(`Invalid Action ${action}`);
+        }
+        updateRoundStatus();
+        checkFoldConditions();
+    }
+
+    //Ends a round and prepares for the next round
+    endRound () {
+        findWinner();
+        for(var i = 0; i < this.allPlayers.length; i++) {
+            this.allPlayers[i].cards = [];
+        }
+        this.gameDeck = new Deck();
+        this.allPlayers.at(this.winnerPos).amt += this.potAmt;
+        this.potAmt = 0;
+        this.cardsOnBoard = [];
+        this.calledAmt = 2;
+        this.currRound = 0;
+        rotateDealerPos();
+        resetFoldStatus();
+        console.log('Round Has Ended, Next Round Starting');
+        console.log('---------------------------------------------------------------------------------\n');
+    }
+
+    //Ends the entire game
+    endGame () {
+        this.allPlayers = [];
+        this.dealerPos = 0;
+        this.currPlayer = 0;
+        this.cardsOnBoard = [];
+        this.potAmt = 0;
+        this.calledAmt = 2;
+        this.currRound = 0;
+        this.gameDeck = new Deck();
+        console.log('Game Has Ended');
+    }
+
+}
+
 //Player Class
 class Player {
 
@@ -196,9 +309,9 @@ function updateAmt(player, amount) {
     return player;
 }
 
-//Adds a card to the table from the gameDeck
+//Adds a card to the table from the GameState.gameDeck
 function showCard() {
-    GameState.cardsOnBoard.push(gameDeck.cardsArr.shift());
+    GameState.cardsOnBoard.push(GameState.gameDeck.cardsArr.shift());
 }
 
 //Finds and returns the position of the small blind
@@ -633,7 +746,7 @@ const Hands = {
 }
 
 //GameState Object
-let GameState = {
+let GameState = new Game()/*{
     allPlayers : [], //Array of all players in the game
     dealerPos : 0, //Position of the dealer in allPlayers
     currPlayer : 0, //Position of the current player in allPlayers
@@ -644,6 +757,7 @@ let GameState = {
     lastRaise : 2, //This is the POSITION of the player that made the last raise
     winnerPos: 0, //Position of the winner of the previous round
     potAmt : 0, //Amount in the pot
+    gameDeck : new Deck(),
 
     //Adds a player to the game, with a specifc name and amount
     addPlayer : function (url) {
@@ -665,7 +779,7 @@ let GameState = {
 
     //Begins a round
     beginRound : function() {
-        gameDeck.shuffle();
+        GameState.gameDeck.shuffle();
         // TESTING CASES
         //GameState.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
         //
@@ -679,7 +793,7 @@ let GameState = {
         updatePot(GameState.minBlind);
         //deal cards
         for(var i = 0; i < GameState.allPlayers.length; i++) {
-            gameDeck.deal(GameState.allPlayers[i],2);
+            GameState.gameDeck.deal(GameState.allPlayers[i],2);
         }
         GameState.currPlayer = recalPos(bigBlindPos()+1);
         GameState.lastRaise = bigBlindPos();
@@ -715,7 +829,7 @@ let GameState = {
         for(var i = 0; i < GameState.allPlayers.length; i++) {
             GameState.allPlayers[i].cards = [];
         }
-        gameDeck = new Deck();
+        GameState.gameDeck = new Deck();
         GameState.allPlayers.at(GameState.winnerPos).amt += GameState.potAmt;
         GameState.potAmt = 0;
         GameState.cardsOnBoard = [];
@@ -736,13 +850,13 @@ let GameState = {
         GameState.potAmt = 0;
         GameState.calledAmt = 2;
         GameState.currRound = 0;
-        gameDeck = new Deck();
+        GameState.gameDeck = new Deck();
         console.log('Game Has Ended');
     }
-};
+}; */
 
-//gameDeck Object
-var gameDeck = new Deck();
+//GameState.gameDeck Object
+//var gameDeck = new Deck();
 
 /*
 // POKER PROJECT SERVER
