@@ -15,10 +15,10 @@
       </div><br>
       <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
       <button v-on:click="raise" id="raise"> Raise </button>
-      <input type="text" id="raiseamt" name="raiseamt" size="2px">
+      <input type="text" class="raiseamt" :id="player.name" name="raiseamt" size="2px">
       <button v-on:click="fold" id="fold"> Fold </button>
     </div><br>
-    <div style="display:inline">
+    <div style="display:inline-block">
       <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
       <h2 id="potAmt">${{potAmt}}</h2>
     </div><br>
@@ -30,16 +30,18 @@
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
     </div>
 
-    <h2>Functions</h2>
-    <button v-on:click="getGameState">Get GameState</button><br>
-    <input type="text" id="pname" name="pname">
-    <button v-on:click="addPlayer">Add Player</button><br>
-    <input type="text" id="rname" name="rname">
-    <button v-on:click="removePlayer">Remove Player</button><br>
-    <button v-on:click="beginRound">Begin Round</button><br>
+    <h2>Developer Tools</h2>
+    <div>
+      <button v-on:click="getGameState" style="margin-right:50px">Get GameState</button>
+      <input type="text" id="pname" name="pname">
+      <button v-on:click="addPlayer" style="margin-right:50px">Add Player</button>
+      <input type="text" id="rname" name="rname">
+      <button v-on:click="removePlayer" style="margin-right:50px">Remove Player</button>
+      <button v-on:click="beginRound">Begin Round</button>
 
-    <button v-on:click="endRound">End Round</button><br>
-    <button v-on:click="endGame">End Game</button>
+      <button v-on:click="endRound">End Round</button>
+      <button v-on:click="endGame">End Game</button>
+    </div>
   </div>
 </div>
 </template>
@@ -173,9 +175,10 @@ export default {
     },
     async raise() {
       let vm = this;
-      axios.get(`http://localhost:3000/gameaction?playerpos=${vm.currPlayer}&action=raise&amt=${document.getElementById('raiseamt').value}`)
+      axios.get(`http://localhost:3000/gameaction?playerpos=${vm.currPlayer}&action=raise&amt=${document.getElementById(`${vm.allPlayers.at(vm.currPlayer).name}`).value}`)
       .then(function (response) {
         //handle success
+        document.getElementsByClassName('raiseamt').innerHTML = '';
         console.log(response.data);
         ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt} = response.data);
       })
@@ -256,8 +259,9 @@ export default {
 body {
   text-align: center;
   font-family: 'Montserrat', sans-serif;
-  padding:0;
+  padding:5px;
   margin:0;
+  background-image: url("./assets/felt_table.jpg");
 }
 
 button {
@@ -350,8 +354,8 @@ h3:hover {
 }
 
 #playerList[data-status="true"] {
-  background-color: #1ea1a1;
-  border-color: #008080;
+  background-color: #5DADE2;
+  border-color: #5DADE2;
 }
 
 #playerList[curr-player="true"] {
@@ -397,13 +401,13 @@ h3:hover {
   transition: 0.5s;
 }
 
-#raiseamt {
+.raiseamt {
   background-color: #F5B7B1;
   border-color: #F5B7B1;
   transition: 0.5s;
 }
 
-#raiseamt:hover {
+.raiseamt:hover {
   background-color: #F1948A;
   border-color: #F1948A;
   transition: 0.5s;
@@ -411,8 +415,8 @@ h3:hover {
 
 #fold {
   color:#ffffff;
-  background-color: #7FB3D5;
-  border-color: #7FB3D5;
+  background-color: #5DADE2;
+  border-color: #5DADE2;
   transition: 0.5s;
 }
 

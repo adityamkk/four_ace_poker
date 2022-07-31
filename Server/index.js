@@ -212,12 +212,12 @@ function updatePot(amt) {
 
 //On their turn, has the player do the "call" action, which makes them pay the same amount as the current paid amount
 function call(player) {
-    console.log(`${player.name} called ${GameState.calledAmt}`);
+    console.log(`${player.name} called $${GameState.calledAmt}`);
     if(player.currPaidAmt === -1) {player.currPaidAmt = 0;}
     if(GameState.calledAmt <= player.amt) {
         updateAmt(player, (-1)*GameState.calledAmt + player.currPaidAmt);
         updatePot(GameState.calledAmt - player.currPaidAmt);
-        console.log(`updated amount: ${GameState.calledAmt - player.currPaidAmt}`);
+        console.log(`updated amount: $${GameState.calledAmt - player.currPaidAmt}`);
         player.currPaidAmt = GameState.calledAmt;
         rotateCurrPos();
         return GameState.calledAmt;
@@ -228,12 +228,12 @@ function call(player) {
 
 //On their turn, has the player do the "raise" action, which makes them pay a certain specified amount, as long as it is greater than the standard
 function raise(player, amt) {
-    console.log(`${player.name} raised ${amt}`);
+    console.log(`${player.name} raised $${amt}`);
     if(amt > GameState.calledAmt && amt <= player.amt) {
         GameState.calledAmt = amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt);
-        console.log(`updated amount: ${amt}`);
+        console.log(`updated amount: $${amt}`);
         player.currPaidAmt = GameState.calledAmt;
         rotateCurrPos();
         return amt;
@@ -246,20 +246,20 @@ function raise(player, amt) {
 //Their turn is skipped for remaining plays
 function fold(player) {
     player.hasFolded = true;
-    //player.cards = [];
     rotateCurrPos();
+    checkFoldConditions();
 }
 
 //Updates the round status and checks if bets have been equalized
 function updateRoundStatus() {
-    console.log('ROUND STATUS');
+    //console.log('ROUND STATUS');
     let areEqualized = true;
     let q = {};
     for(const p of GameState.allPlayers) {
         if(!p.hasFolded) {q = p;}
     }
     for(const p of GameState.allPlayers) {
-        console.log( `default value:  ${q.currPaidAmt} , currPaidAmt:  ${p.currPaidAmt}`);
+        //console.log( `default value:  ${q.currPaidAmt} , currPaidAmt:  ${p.currPaidAmt}`);
         if(!p.hasFolded && (p.currPaidAmt < 0 || q.currPaidAmt != p.currPaidAmt)) {
             areEqualized = false;
         }
@@ -274,16 +274,16 @@ function updateRoundStatus() {
 function startNewRound() {
     GameState.currPlayer = recalPos(bigBlindPos());
     rotateCurrPos();
-    console.log(`Current Position: ${GameState.currPlayer}`);
+    //console.log(`Current Position: ${GameState.currPlayer}`);
     GameState.calledAmt = 0; GameState.lastRaise = 0;
     for(const p of GameState.allPlayers) {
         p.currPaidAmt = -1;
     }
     GameState.currRound++;
-    console.log(`Current Round: ${GameState.currRound}`)
+    //console.log(`Current Round: ${GameState.currRound}`)
     switch(GameState.currRound) {
         case 1: for(let i = 0; i < 3; i++) {showCard();}
-                console.log(`3 cards shown`);
+                console.log(`3 cards shown (flop)`);
                 break;
         case 2: showCard();
                 console.log(`1 card shown (turn)`);
@@ -292,8 +292,9 @@ function startNewRound() {
                 console.log(`1 card shown (river)`);
                 break;
         case 4: GameState.currRound = 0;
-                console.log(`Last round over`);
+                console.log(`Last round over, time for the showdown!`);
                 GameState.endRound();
+                GameState.beginRound();
     }
 }
 
@@ -308,7 +309,9 @@ function checkFoldConditions() {
         for(let i = 0; i < GameState.allPlayers.length; i++) {
             if(GameState.allPlayers[i].hasFolded === false) {
                 GameState.winnerPos = i;
-                declareWinner(GameState.allPlayers.at(GameState.winnerPos));
+                console.log(`Everyone except ${GameState.allPlayers.at(GameState.winnerPos).name} folded!`);
+                GameState.endRound();
+                GameState.beginRound();
                 i = GameState.allPlayers.length + 1;
             }
         }
@@ -334,9 +337,7 @@ function findWinner() {
         if(!player.hasFolded && !foundWinner) {
             foundWinner = true;
             GameState.winnerPos = i;
-            console.log(`${player.name} won the round with a ${player.handType()}!`);
             declareWinner(player);
-            //TODO: Needs to force an end round activation
             return player;
         }
     });
@@ -344,6 +345,7 @@ function findWinner() {
 
 //Gives the entire amount in the pot to the winning player
 function declareWinner(player) {
+    console.log(`${player.name} won the round with a ${player.handType()}!`);
     updateAmt(player, (GameState.potAmt));
     GameState.allPlayers.forEach(function(player) {
         player.currPaidAmt = -1;
@@ -388,7 +390,7 @@ const Hands = {
         for(let i = 0; i < cards.length; i++) {
             smallest = i;
             for(let j = i+1; j < cards.length; j++) {
-                if(this.rankToNum(cards[j].rank) < this.rankToNum(cards[i].rank)) {
+                if(this.rankToNum(cards[j].rank) < this.rankToNum(cards[smallest].rank)) {
                     smallest = j;
                 }
             }
@@ -402,25 +404,51 @@ const Hands = {
         let sortedCards = copyArr(this.sortByRank(cards));
         for(let i = 1; i < sortedCards.length; i++) {
             if(this.rankToNum(sortedCards[i].rank) === this.rankToNum(sortedCards[i-1].rank)) {
-                sortedCards.splice(i);
+                sortedCards.splice(i,i+1);
                 i--;
             }
         }
-        return sortedCards;
+        return this.sortByRank(sortedCards);
+    },
+
+    //Groups all cards passed in into a 2 dimensional array of cards, grouped by suite
+    groupBySuite : function (cards) {
+        let arrCards = [[],[],[],[]];
+        for(const c of cards) {
+            switch(c.suite) {
+                case 'H': arrCards[0].push(c); break;
+                case 'D': arrCards[1].push(c); break;
+                case 'C': arrCards[2].push(c); break;
+                case 'S': arrCards[3].push(c);
+            }
+        }
+        for(let i = 0; i < arrCards.length; i++) {
+            arrCards[i] = this.sortByRank(arrCards[i]);
+        }
+        return arrCards;
     },
 
     //Checks if a player has a Straight Flush, returns the value of the highest card in the straight if true
     isStraightFlush : function (player) {
-        const allCards = this.sortByRank(this.removeDuplRanks(GameState.cardsOnBoard.concat(player.cards)));
+        const allCards = this.groupBySuite(GameState.cardsOnBoard.concat(player.cards));
         for(let i = 0; i < allCards.length; i++) {
-            try {
-                const f = this.rankToNum(allCards[i].rank);
-                const r = allCards[i].suite;
-                if(arrEquals([f+1,f+2,f+3,f+4],[this.rankToNum(allCards[i+1].rank),this.rankToNum(allCards[i+2].rank),this.rankToNum(allCards[i+3].rank),this.rankToNum(allCards[i+4].rank)]) && Array.equals([r,r,r,r],[allCards[i+1].suite,allCards[i+2].suite,allCards[i+3].suite,allCards[i+4].suite])) {
-                    return f+4;
+            if(allCards.at(i).length >= 5) {
+                for(let j = 0; j < allCards.at(i).length; j++) {
+                    try {
+                        const f = this.rankToNum(allCards.at(i)[j].rank);
+                        if(arrEquals([f+1,f+2,f+3,f+4],[this.rankToNum(allCards.at(i)[j+1].rank),this.rankToNum(allCards.at(i)[j+2].rank),this.rankToNum(allCards.at(i)[j+3].rank),this.rankToNum(allCards.at(i)[j+4].rank)])) {
+                            return f+4;
+                        }
+                    } catch (error) {
+                        if(this.rankToNum(allCards.at(i).at(0).rank) === 0 && this.rankToNum(allCards.at(i).at(-1).rank) === 12) {
+                            const f = -1;
+                            if(arrEquals([f+1,f+2,f+3,f+4],[this.rankToNum(allCards.at(i)[0].rank),this.rankToNum(allCards.at(i)[1].rank),this.rankToNum(allCards.at(i)[2].rank),this.rankToNum(allCards.at(i)[3].rank)])) {
+                                return f+4;
+                            }
+                        }
+                        j = allCards.at(i).length;
+                    }
                 }
-            } catch (error) {
-                return false;
             }
         }
         return false;
@@ -447,9 +475,9 @@ const Hands = {
     },
 
     //Checks if a player has a Straight, returns the value of the highest card in the Straight if there
-    //TODO: NEEDS TO BE DEBUGGED
     isStraight : function (player) {
-        const allCards = this.sortByRank(this.removeDuplRanks(GameState.cardsOnBoard.concat(player.cards)));
+        const allCards = this.removeDuplRanks(GameState.cardsOnBoard.concat(player.cards));
+        //console.log(allCards);
         for(let i = 0; i < allCards.length; i++) {
             try {
                 const f = this.rankToNum(allCards[i].rank);
@@ -457,6 +485,12 @@ const Hands = {
                     return f+4;
                 }
             } catch (error) {
+                if(this.rankToNum(allCards.at(0).rank) === 0 && this.rankToNum(allCards.at(-1).rank) === 12) {
+                    const f = -1;
+                    if(arrEquals([f+1,f+2,f+3,f+4],[this.rankToNum(allCards[0].rank),this.rankToNum(allCards[1].rank),this.rankToNum(allCards[2].rank),this.rankToNum(allCards[3].rank)])) {
+                        return f+4;
+                    }
+                }
                 return false;
             }
         }
@@ -605,6 +639,29 @@ let GameState = {
     winnerPos: 0, //Position of the winner of the previous round
     potAmt : 0, //Amount in the pot
 
+    beginRound : function() {
+        gameDeck.shuffle();
+        // TESTING CASES
+        //GameState.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
+        //
+        //small blind
+        updateAmt(GameState.allPlayers[smallBlindPos()], ~~(GameState.minBlind/2)*(-1));
+        GameState.allPlayers[smallBlindPos()].currPaidAmt = 1;
+        updatePot(~~(GameState.minBlind/2));
+        //big blind
+        updateAmt(GameState.allPlayers[bigBlindPos()], GameState.minBlind*(-1));
+        GameState.allPlayers[bigBlindPos()].currPaidAmt = 2;
+        updatePot(GameState.minBlind);
+        //deal cards
+        for(var i = 0; i < GameState.allPlayers.length; i++) {
+            gameDeck.deal(GameState.allPlayers[i],2);
+        }
+        GameState.currPlayer = recalPos(bigBlindPos()+1);
+        GameState.lastRaise = bigBlindPos();
+
+        console.log(`Round has started, ${GameState.allPlayers.at(GameState.currPlayer).name} is starting`);
+    },
+
     endRound : function() {
         findWinner();
         for(var i = 0; i < GameState.allPlayers.length; i++) {
@@ -619,7 +676,7 @@ let GameState = {
         rotateDealerPos();
         resetFoldStatus();
         console.log('Round Has Ended, Next Round Starting');
-        console.log('---------------------------------------------------------------------------------');
+        console.log('---------------------------------------------------------------------------------\n');
     },
 };
 
@@ -692,24 +749,7 @@ const server = http.createServer((req, res) => {
 
         //Begins a round
         case '/beginRound' :
-            gameDeck.shuffle();
-            //small blind
-            updateAmt(GameState.allPlayers[smallBlindPos()], ~~(GameState.minBlind/2)*(-1));
-            GameState.allPlayers[smallBlindPos()].currPaidAmt = 1;
-            updatePot(~~(GameState.minBlind/2));
-            //big blind
-            updateAmt(GameState.allPlayers[bigBlindPos()], GameState.minBlind*(-1));
-            GameState.allPlayers[bigBlindPos()].currPaidAmt = 2;
-            updatePot(GameState.minBlind);
-            //deal cards
-            for(var i = 0; i < GameState.allPlayers.length; i++) {
-                gameDeck.deal(GameState.allPlayers[i],2);
-            }
-            GameState.currPlayer = recalPos(bigBlindPos()+1);
-            GameState.lastRaise = bigBlindPos();
-
-            console.log(`Round has started, ${GameState.allPlayers.at(GameState.currPlayer).name} is starting`);
-
+            GameState.beginRound();
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
             res.write(JSON.stringify(GameState));  
             res.end();
