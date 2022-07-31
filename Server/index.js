@@ -645,6 +645,25 @@ let GameState = {
     winnerPos: 0, //Position of the winner of the previous round
     potAmt : 0, //Amount in the pot
 
+    //Adds a player to the game, with a specifc name and amount
+    addPlayer : function (url) {
+        GameState.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 0));
+        console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
+    },
+
+    //Removes a player from the game, based on their name
+    removePlayer : function (url) {
+        const remName = url.searchParams.get('name');
+        for(var i = 0; i < GameState.allPlayers.length; i++) {
+            if(remName === GameState.allPlayers[i].name) {
+                GameState.allPlayers.splice(i,1);
+                console.log(`Player \"${remName}\" removed from allPlayers.`);
+                i=GameState.allPlayers.length;
+            }
+        }
+    },
+
+    //Begins a round
     beginRound : function() {
         gameDeck.shuffle();
         // TESTING CASES
@@ -668,6 +687,29 @@ let GameState = {
         console.log(`Round has started, ${GameState.allPlayers.at(GameState.currPlayer).name} is starting`);
     },
 
+    //Has the current player do a specific action
+    gameAction : function (url) {
+        const action = url.searchParams.get('action');
+        const player = GameState.allPlayers.at(GameState.currPlayer);
+        console.log(`${action} is used by the player \"${player.name}\"`);
+        switch(action) {
+            case 'call' :
+                call(player);
+                break;
+            case 'raise' :
+                raise(player, parseInt(url.searchParams.get('amt')));
+                break;
+            case 'fold' :
+                fold(player);
+                break;
+            default:
+                console.log(`Invalid Action ${action}`);
+        }
+        updateRoundStatus();
+        checkFoldConditions();
+    },
+
+    //Ends a round and prepares for the next round
     endRound : function() {
         findWinner();
         for(var i = 0; i < GameState.allPlayers.length; i++) {
@@ -684,6 +726,19 @@ let GameState = {
         console.log('Round Has Ended, Next Round Starting');
         console.log('---------------------------------------------------------------------------------\n');
     },
+
+    //Ends the entire game
+    endGame : function() {
+        GameState.allPlayers = [];
+        GameState.dealerPos = 0;
+        GameState.currPlayer = 0;
+        GameState.cardsOnBoard = [];
+        GameState.potAmt = 0;
+        GameState.calledAmt = 2;
+        GameState.currRound = 0;
+        gameDeck = new Deck();
+        console.log('Game Has Ended');
+    }
 };
 
 //gameDeck Object
@@ -704,9 +759,7 @@ const server = http.createServer((req, res) => {
 
         //Adds a player to the game, with a specifc name and amount
         case '/addPlayer' :
-            GameState.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 0));
-            console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
-
+            GameState.addPlayer(url);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(GameState));  
             res.end();
@@ -714,7 +767,6 @@ const server = http.createServer((req, res) => {
         
         //Refreshes the gamestate
         case '/gamestate' :
-            console.log(GameState);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(GameState)); 
             res.end();
@@ -722,14 +774,7 @@ const server = http.createServer((req, res) => {
         
         //Removes a player from the game, based on their name
         case '/removePlayer' :
-            const remName = url.searchParams.get('name');
-            for(var i = 0; i < GameState.allPlayers.length; i++) {
-                if(remName === GameState.allPlayers[i].name) {
-                    GameState.allPlayers.splice(i,1);
-                    console.log(`Player \"${remName}\" removed from allPlayers.`);
-                    i=GameState.allPlayers.length;
-                }
-            }
+            GameState.removePlayer(url);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(GameState));  
             res.end();
@@ -745,24 +790,7 @@ const server = http.createServer((req, res) => {
         
         //Has the current player do a specific action
         case '/gameaction' :
-            const action = url.searchParams.get('action');
-            const player = GameState.allPlayers.at(GameState.currPlayer);
-            console.log(`${action} is used by the player \"${player.name}\"`);
-            switch(action) {
-                case 'call' :
-                    call(player);
-                    break;
-                case 'raise' :
-                    raise(player, parseInt(url.searchParams.get('amt')));
-                    break;
-                case 'fold' :
-                    fold(player);
-                    break;
-                default:
-                    console.log(`Invalid Action ${action}`);
-            }
-            updateRoundStatus();
-            checkFoldConditions();
+            GameState.gameAction(url);
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
             res.write(JSON.stringify(GameState));  
             res.end();
@@ -778,15 +806,7 @@ const server = http.createServer((req, res) => {
         
         //Ends the entire game
         case '/endGame' :
-            GameState.allPlayers = [];
-            GameState.dealerPos = 0;
-            GameState.currPlayer = 0;
-            GameState.cardsOnBoard = [];
-            GameState.potAmt = 0;
-            GameState.calledAmt = 2;
-            GameState.currRound = 0;
-            gameDeck = new Deck();
-            console.log('Game Has Ended');
+            GameState.endGame();
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(GameState));  
             res.end();
