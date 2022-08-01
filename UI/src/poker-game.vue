@@ -26,6 +26,7 @@
       <h2>Blinds: {{ minBlind/2 }}/{{ minBlind }}</h2>
       <h2>Current Bet: {{ calledAmt }}</h2>
       <h2>{{message}}</h2>
+      <h2>Code : {{code}}</h2>
     </div><br>
     <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
@@ -50,9 +51,10 @@
 <script>
 
 import axios from 'axios';
+//axios.defaults.withCredentials = true;
 
 export default {
-  name: 'App',
+  name: 'poker-game',
   data: () => ({
     isLoading: false,
     isError: false,
@@ -67,7 +69,8 @@ export default {
     winnerPos: 0,
     potAmt : 0,
     gameDeck : {},
-    message : ''
+    message : '',
+    code: -1
   }),
   methods: {
     displayCardsOnBoard (cardsOnBoard) {
@@ -103,11 +106,11 @@ export default {
     },  
     async getGameState () {
       let vm = this;
-      axios.get('http://localhost:3000/gamestate')
+      axios.get('/gamestate')
       .then(function (response) {
        // handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         // handle error
@@ -119,12 +122,12 @@ export default {
     },
     async addPlayer () {
       let vm = this;
-      axios.get(`http://localhost:3000/addPlayer?name=${document.getElementById('pname').value}&amt=1000`)
+      axios.get(`/addPlayer?name=${document.getElementById('pname').value}&amt=1000`)
       .then(function (response) {
         //handle success
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -136,12 +139,12 @@ export default {
     },
     async removePlayer () {
       let vm = this;
-      axios.get(`http://localhost:3000/removePlayer?name=${document.getElementById('rname').value}`)
+      axios.get(`/removePlayer?name=${document.getElementById('rname').value}`)
       .then(function (response) {
         //handle success
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -153,11 +156,11 @@ export default {
     },
     async beginRound () {
       let vm = this;
-      axios.get(`http://localhost:3000/beginRound`)
+      axios.get(`/beginRound`)
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -169,12 +172,12 @@ export default {
     },
     async call() {
       let vm = this;
-      axios.get(`http://localhost:3000/gameaction?action=call`)
+      axios.get(`/gameaction?action=call`)
       .then(function (response) {
         //handle success
         console.log(response.data);
         //console.log(`${vm.allPlayers.at(vm.currPlayer).amt}`);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -186,12 +189,12 @@ export default {
     },
     async raise() {
       let vm = this;
-      axios.get(`http://localhost:3000/gameaction?playerpos=${vm.currPlayer}&action=raise&amt=${document.getElementById(`${vm.allPlayers.at(vm.currPlayer).name}`).value}`)
+      axios.get(`/gameaction?playerpos=${vm.currPlayer}&action=raise&amt=${document.getElementById(`${vm.allPlayers.at(vm.currPlayer).name}`).value}`)
       .then(function (response) {
         //handle success
         document.getElementsByClassName('raiseamt').innerHTML = '';
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -203,11 +206,11 @@ export default {
     },
     async fold() {
       let vm = this;
-      axios.get(`http://localhost:3000/gameaction?playerpos=${vm.currPlayer}&action=fold`)
+      axios.get(`/gameaction?playerpos=${vm.currPlayer}&action=fold`)
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -219,11 +222,11 @@ export default {
     },
     async endRound () {
       let vm = this;
-      axios.get('http://localhost:3000/endRound')
+      axios.get('/endRound')
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -235,11 +238,11 @@ export default {
     },
     async endGame() {
       let vm = this;
-      axios.get(`http://localhost:3000/endGame`)
+      axios.get(`/endGame`)
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
       })
       .catch(function (error) {
         //handle error

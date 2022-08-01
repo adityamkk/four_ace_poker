@@ -14,12 +14,14 @@
 import Vue from 'vue'
 import VuePlayingCard from 'vue-playing-card';
 
-import HomePage from './home-page.vue'
+import router from './router';
+import App from './App.vue';
 
 Vue.config.productionTip = false
 
 Vue.use(VuePlayingCard);
 
 new Vue({
-  render: h => h(HomePage),
+  router,
+  render: h => h(App),
 }).$mount('#app')

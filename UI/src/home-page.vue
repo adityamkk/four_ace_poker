@@ -51,7 +51,7 @@
                     <h3>Code</h3>
                     <input type="text" id="jcode" name="jcode">
                 </div>
-                <button id="jbutton">Join</button> 
+                <button v-on:click="joinGame" id="jbutton">Join</button> 
             </div>
         </div>
     </div>
@@ -59,7 +59,10 @@
 </template>
 
 <script>
-    //import axios from 'axios';
+    import axios from 'axios';
+    //axios.defaults.withCredentials = true;
+
+    import router from './router';
 
     export default {
         name: 'home-page',
@@ -68,7 +71,34 @@
         }),
         methods : {
             async multiPlayerNewGame() {
-                
+                axios.get(`/newMultiGame?name=${document.getElementById('cname').value}`)
+                .then(function (response) {
+                    // handle success
+                    router.push('/game');
+                    console.log(response.data);
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
+            },
+            async joinGame() {
+                axios.get(`/addPlayer?code=${document.getElementById('jcode').value}&name=${document.getElementById('jname').value}`)
+                .then(function (response) {
+                    // handle success
+                    router.push('/game');
+                    console.log(response.data);
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+                .then(function () {
+                    // always executed
+                });
             }
         }
     }

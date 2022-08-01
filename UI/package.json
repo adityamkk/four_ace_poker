@@ -13,7 +13,8 @@
     "core-js": "^3.8.3",
     "vue": "^2.6.11",
     "vue-axios": "^3.4.1",
-    "vue-playing-card": "^1.0.0"
+    "vue-playing-card": "^1.0.0",
+    "vue-router": "^2.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
