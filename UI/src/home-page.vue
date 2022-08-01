@@ -148,6 +148,7 @@ select {
 }
 
 h1 {
+    color:#ffffff;
     padding: 25px;
     margin: 5px;
 }
@@ -163,7 +164,7 @@ h3 {
 }
 
 #options {
-    display: inline-flex;
+    display: inline-block;
     padding: 5px;
     margin: 5px;
 }

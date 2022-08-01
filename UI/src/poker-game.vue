@@ -1,6 +1,8 @@
 <template>
 <div>
-
+  <button v-on:click="beginRound" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button>
+  <button v-on:click="removePlayer" id="leaveGame">Leave Game</button>
+  <h2 id="code">Code : {{code}}</h2>
   <div id="playerBox">
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
       <div style="display:inline-flex">
@@ -11,12 +13,14 @@
         </div>
       </div> <br>
       <div v-for="card in player.cards" :key="card.id" id="playerCards" style="display: inline-block">
-        <vue-playing-card :signature="getCard(card)" width="100"></vue-playing-card>
+        <vue-playing-card :signature="getCard(card)" :cover="!isThisPlayer(player)" width="100"></vue-playing-card>
       </div><br>
-      <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
-      <button v-on:click="raise" id="raise"> Raise </button>
-      <input type="text" class="raiseamt" :id="player.name" name="raiseamt" size="2px">
-      <button v-on:click="fold" id="fold"> Fold </button>
+      <div :class="isThisPlayerAndMyTurn(player)">
+        <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
+        <button v-on:click="raise" id="raise"> Raise </button>
+        <input type="text" class="raiseamt" :id="player.name" name="raiseamt" size="2px">
+        <button v-on:click="fold" id="fold"> Fold </button>
+      </div>
     </div><br>
     <div style="display:inline-block">
       <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
@@ -26,7 +30,6 @@
       <h2>Blinds: {{ minBlind/2 }}/{{ minBlind }}</h2>
       <h2>Current Bet: {{ calledAmt }}</h2>
       <h2>{{message}}</h2>
-      <h2>Code : {{code}}</h2>
     </div><br>
     <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
@@ -51,6 +54,8 @@
 <script>
 
 import axios from 'axios';
+import Cookie from 'js-cookie';
+import router from './router';
 //axios.defaults.withCredentials = true;
 
 export default {
@@ -101,6 +106,23 @@ export default {
       }
       return false;
     },
+    isThisPlayer (player) {
+      if(Cookie.get("name") === player.name) {
+        return true;
+      }
+      return false;
+    },
+    isMyTurn () {
+      const vm = this;
+      if(Cookie.get("name") === vm.allPlayers.at(vm.currPlayer).name) {
+        return true;
+      }
+      return false;
+    },
+    isThisPlayerAndMyTurn (player) {
+      const vm = this;
+      return ((vm.isThisPlayer(player) && vm.isMyTurn()) ? ('yesDisplay') : ('noDisplay'));
+    },
     assignIcon (player) {
       const vm = this;
       for(let i = 0; i < vm.allPlayers.length; i++) {
@@ -109,6 +131,9 @@ export default {
         }
       }
     },  
+    hideStartButton () {
+      document.getElementById('startGame').style.display = 'none';
+    },
     refresh() {
         let vm = this;
         setTimeout(function () {
@@ -151,9 +176,10 @@ export default {
     },
     async removePlayer () {
       let vm = this;
-      axios.get(`/removePlayer?name=${document.getElementById('rname').value}`)
+      axios.get(`/removePlayer?name=${Cookie.get("name")}`)
       .then(function (response) {
         //handle success
+        router.push('/');
         console.log(response.data);
         document.getElementById('pname').value = '';
         ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
@@ -168,6 +194,7 @@ export default {
     },
     async beginRound () {
       let vm = this;
+      vm.hideStartButton();
       axios.get(`/beginRound`)
       .then(function (response) {
         //handle success
@@ -298,6 +325,7 @@ button {
   border-style: none;
   border-radius: 25px;
   transition: 0.5s;
+  cursor:pointer;
 }
 
 button:hover {
@@ -313,23 +341,12 @@ input {
   font-family: 'Montserrat', sans-serif;
   padding: 10px;
   margin: 5px;
-  background-color: #ffcc00;
   border-style: none;
   border-radius: 25px;
   transition: 0.5s;
 }
 
 input:hover {
-  background-color: #ffaa00;
-  transition: 0.5s;
-}
-
-h1 {
-  padding: 20px;
-  margin: 15px;
-  background-color: #aa0000;
-  border-style: none;
-  border-radius: 25px;
   transition: 0.5s;
 }
 
@@ -345,20 +362,25 @@ h2 {
 h3 {
   padding: 10px;
   margin: 5px;
-  background-color: #ffcc00;
   border-style: none;
   border-radius: 25px;
   transition: 0.5s;
 }
 
 h3:hover {
-  background-color: #ffaa00;
   transition: 0.5s;
+}
+
+.yesDisplay {
+  display:inline-block;
+}
+
+.noDisplay {
+  display:none;
 }
 
 #cardsOnBoard {
   padding: 50px;
-  background-image: url("./assets/felt_table.jpg");
   border-style:double;
   border-color: #559900;
   border-radius: 25px;
@@ -369,8 +391,25 @@ h3:hover {
   padding-bottom:50px;
 }
 
-#playerBox {
-  background-image: url("./assets/felt_table.jpg");
+#code {
+  text-align:right;
+  display:flex;
+}
+
+#startGame {
+  display:none;
+}
+
+#startGame[is-first-player="true"] {
+  display:block;
+}
+
+#startGame[is-first-player="false"] {
+  display:none;
+}
+
+#leaveGame {
+  display:block;
 }
 
 #playerList {

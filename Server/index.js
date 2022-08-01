@@ -32,6 +32,7 @@ class Game {
     addPlayer (url) {
         this.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 1000));
         console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
+        findGame(this.code).message = `${url.searchParams.get('name')} joined the game!`;
         return url.searchParams.get('name');
     }
 
@@ -42,6 +43,7 @@ class Game {
             if(remName === this.allPlayers[i].name) {
                 this.allPlayers.splice(i,1);
                 console.log(`Player \"${remName}\" removed from allPlayers.`);
+                findGame(this.code).message = `${remName} left the game`;
                 i = this.allPlayers.length;
             }
         }
@@ -79,12 +81,15 @@ class Game {
         console.log(`${action} is used by the player \"${player.name}\"`);
         switch(action) {
             case 'call' :
+                findGame(this.code).message = `${player.name} called`;
                 call(player,this.code);
                 break;
             case 'raise' :
+                findGame(this.code).message = `${player.name} raised ${parseInt(url.searchParams.get('amt'))}`;
                 raise(player, parseInt(url.searchParams.get('amt')),this.code);
                 break;
             case 'fold' :
+                findGame(this.code).message = `${player.name} folded`;
                 fold(player,this.code);
                 break;
             default:
@@ -434,6 +439,7 @@ function checkFoldConditions(code) {
             if(findGame(code).allPlayers[i].hasFolded === false) {
                 findGame(code).winnerPos = i;
                 console.log(`Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
+                findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
                 findGame(code).endRound();
                 findGame(code).beginRound();
                 i = findGame(code).allPlayers.length + 1;
