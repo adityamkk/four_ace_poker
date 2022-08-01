@@ -70,8 +70,13 @@ export default {
     potAmt : 0,
     gameDeck : {},
     message : '',
+    timer : '',
     code: -1
   }),
+  created () {
+    this.getGameState();
+    this.timer = setInterval(this.getGameState, 1000);
+  },
   methods: {
     displayCardsOnBoard (cardsOnBoard) {
       cardsOnBoard.forEach(function(card) {
@@ -104,6 +109,13 @@ export default {
         }
       }
     },  
+    refresh() {
+        let vm = this;
+        setTimeout(function () {
+            vm.getGameState();
+
+        }, 3000);
+    },
     async getGameState () {
       let vm = this;
       axios.get('/gamestate')
@@ -251,7 +263,7 @@ export default {
       .then(function () {
         // always executed
       })
-    }
+    },
   }
 }
 //Avenir, Helvetica, Arial, sans-serif
