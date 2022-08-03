@@ -834,6 +834,15 @@ function getNameFromUrl(url) {
     return name;
 }
 
+function doesNameExist(url) {
+    for(const p of findGame(getCodeFromUrl(url)).allPlayers) {
+        if(p.name === getNameFromUrl(url)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //Server Response
 const server = http.createServer((req, res) => {
 
@@ -842,7 +851,6 @@ const server = http.createServer((req, res) => {
 
     //Different responses based on different urls
     switch(url.pathname) {
-
         //Creates a new multiplayer game and adds the creator to the list of players
         case '/newMultiGame' :
             const [code,name] = newMultiGame(url);
@@ -854,24 +862,22 @@ const server = http.createServer((req, res) => {
 
         //Adds a player to the game, with a specifc name and amount
         case '/addPlayer' :
-            const pname = findGame(getCodeFromUrl(url)).addPlayer(url);
-            res.setHeader('Set-Cookie',[`code=${getCodeFromUrl(url)}; path=/`,`name=${pname}; path=/`]);
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCodeFromUrl(url)).returnSecureGameFromUrl(url)));  
-            res.end();
+            if(!doesNameExist(url)) {
+                const pname = findGame(getCodeFromUrl(url)).addPlayer(url);
+                res.setHeader('Set-Cookie',[`code=${getCodeFromUrl(url)}; path=/`,`name=${pname}; path=/`]);
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.write(JSON.stringify(findGame(getCodeFromUrl(url)).returnSecureGameFromUrl(url)));  
+                res.end();
+            } else {
+                res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.end();
+            }
             break;
         
         //Refreshes the gamestate
         case '/gamestate' :
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req))); 
-            res.end();
-            break;
-
-        //Sends the gamestate for an external request
-        case '/externalGameReq' :
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCodeFromUrl(url)).returnSecureGameFromUrl(url)));
             res.end();
             break;
         
