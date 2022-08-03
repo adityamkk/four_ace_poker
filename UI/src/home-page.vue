@@ -67,7 +67,7 @@
     export default {
         name: 'home-page',
         data : () => ({
-
+            gameInfo: []
         }),
         methods : {
             async multiPlayerNewGame() {
@@ -86,6 +86,29 @@
                 });
             },
             async joinGame() {
+                const vm = this;
+                this.externalGameReq(document.getElementById('jcode').value,document.getElementById('jname').value);
+                console.log(vm.gameInfo);
+                const [players, code] = vm.gameInfo;
+                
+                let nameExists = false; let codeIsCorrect = true;
+                for(const p of players) {
+                    if(p.name === document.getElementById('jname').value) {
+                        nameExists = true;
+                    }
+                }
+                if(parseInt(code) === 0) {
+                    codeIsCorrect = false;
+                }
+                if(!codeIsCorrect) {
+                    alert('Code is invalid, please try again');
+                    return;
+                }
+                if(nameExists) {
+                    alert('Name is already in use, please use a different name');
+                    return;
+                }
+                
                 axios.get(`/addPlayer?code=${document.getElementById('jcode').value}&name=${document.getElementById('jname').value}`)
                 .then(function (response) {
                     // handle success
@@ -98,6 +121,20 @@
                 })
                 .then(function () {
                     // always executed
+                });
+            },
+            async externalGameReq(code,name) {
+                const vm = this;
+                axios.get(`/externalGameReq?code=${code}&name=${name}`)
+                .then(function (response) {
+                    console.log(response.data);
+                    vm.gameInfo = [response.data.allPlayers, response.data.code];
+                })
+                .catch(function (error) {
+                    console.log(error);
+                })
+                .then(function () {
+
                 });
             }
         }

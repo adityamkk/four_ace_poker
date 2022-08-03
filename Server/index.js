@@ -130,6 +130,27 @@ class Game {
         console.log('Game Has Ended');
     }
 
+    returnSecureGame (req) {
+        let clonedGame = JSON.parse(JSON.stringify(this));
+        const dummyHand = [new Card('',''),new Card('','')]
+        for(let p of clonedGame.allPlayers) {
+            if(p.name != getName(req) && p.cards.length != 0) {
+                p.cards = dummyHand;
+            }
+        }
+        return clonedGame;
+    }
+
+    returnSecureGameFromUrl (url) {
+        let clonedGame = JSON.parse(JSON.stringify(this));
+        for(let p of clonedGame.allPlayers) {
+            if(p.name != getNameFromUrl(url)) {
+                p.cards = [];
+            }
+        }
+        return clonedGame;
+    }
+
 }
 
 //Player Class
@@ -777,7 +798,10 @@ function findGame(reqCode) {
 
 //TODO
 function newMultiGame(url) {
-    const code = Math.floor(Math.random()*10000000);
+    let code = Math.floor(Math.random()*10000000);
+    while(code in games.keys()) {
+        code = Math.floor(Math.random()*10000000);
+    }
     games.set(code, new Game(code));
     const name = findGame(code).addPlayer(url);
     return [code,name];
@@ -792,9 +816,22 @@ function getCode(req) {
     return parseInt(code);
 }
 
+function getName(req) {
+    const nameStr = req.headers.cookie;
+    const name = nameStr.substring(
+        nameStr.lastIndexOf("=")+1
+    );
+    return name;
+}
+
 function getCodeFromUrl(url) {
     const code = parseInt(url.searchParams.get('code'));
     return code;
+}
+
+function getNameFromUrl(url) {
+    const name = url.searchParams.get('name');
+    return name;
 }
 
 //Server Response
@@ -820,14 +857,21 @@ const server = http.createServer((req, res) => {
             const pname = findGame(getCodeFromUrl(url)).addPlayer(url);
             res.setHeader('Set-Cookie',[`code=${getCodeFromUrl(url)}; path=/`,`name=${pname}; path=/`]);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCodeFromUrl(url))));  
+            res.write(JSON.stringify(findGame(getCodeFromUrl(url)).returnSecureGameFromUrl(url)));  
             res.end();
             break;
         
         //Refreshes the gamestate
         case '/gamestate' :
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCode(req)))); 
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req))); 
+            res.end();
+            break;
+
+        //Sends the gamestate for an external request
+        case '/externalGameReq' :
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.write(JSON.stringify(findGame(getCodeFromUrl(url)).returnSecureGameFromUrl(url)));
             res.end();
             break;
         
@@ -835,7 +879,7 @@ const server = http.createServer((req, res) => {
         case '/removePlayer' :
             findGame(getCode(req)).removePlayer(url);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
             break;
 
@@ -843,7 +887,7 @@ const server = http.createServer((req, res) => {
         case '/beginRound' :
             findGame(getCode(req)).beginRound();
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
             break;
         
@@ -851,7 +895,7 @@ const server = http.createServer((req, res) => {
         case '/gameaction' :
             findGame(getCode(req)).gameAction(url);
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
             break;
         
@@ -859,7 +903,7 @@ const server = http.createServer((req, res) => {
         case '/endRound' :
             findGame(getCode(req)).endRound();
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
             break;
         
@@ -867,14 +911,14 @@ const server = http.createServer((req, res) => {
         case '/endGame' :
             findGame(getCode(req)).endGame();
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
             break;
         
         //Refreshes gamestate
         default:  
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
-            res.write(JSON.stringify(findGame(getCode(req))));  
+            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
     }
 });

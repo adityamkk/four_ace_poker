@@ -24,13 +24,13 @@
     </div><br>
     <div style="display:inline-block">
       <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
-      <h2 id="potAmt">${{potAmt}}</h2>
+      <h1 id="potAmt">${{potAmt}}</h1>
     </div><br>
-    <div style="display:inline">
-      <h2>Blinds: {{ minBlind/2 }}/{{ minBlind }}</h2>
-      <h2>Current Bet: {{ calledAmt }}</h2>
-      <h2>{{message}}</h2>
+    <div style="display:inline-flex">
+      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+      <h2>Current Bet: ${{ calledAmt }}</h2>
     </div><br>
+    <h2>{{message}}</h2><br>
     <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
     </div>
