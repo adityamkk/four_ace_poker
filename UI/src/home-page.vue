@@ -114,7 +114,6 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #ffffff;
-  margin-top: 60px;
 }
 
 body {
@@ -133,6 +132,7 @@ input, button, select {
     border-style: none;
     padding: 10px;
     margin: 5px;
+    display:inline;
 }
 
 input {

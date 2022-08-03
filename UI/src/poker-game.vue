@@ -1,7 +1,7 @@
 <template>
 <div>
-  <button v-on:click="beginRound" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button>
-  <button v-on:click="removePlayer" id="leaveGame">Leave Game</button>
+  <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button>
+  <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
   <h2 id="code">Code : {{code}}</h2>
   <div id="playerBox">
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
@@ -306,7 +306,6 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
 }
 
 body {
@@ -325,6 +324,7 @@ button {
   border-style: none;
   border-radius: 25px;
   transition: 0.5s;
+  display:inline;
   cursor:pointer;
 }
 
@@ -335,6 +335,12 @@ button:hover {
 
 button:active {
   background-color: #ff2200;
+}
+
+.mainbtn {
+  float:left;
+  display:inline;
+  width:120px;
 }
 
 input {
@@ -401,7 +407,7 @@ h3:hover {
 }
 
 #startGame[is-first-player="true"] {
-  display:block;
+  display:inline;
 }
 
 #startGame[is-first-player="false"] {
@@ -409,7 +415,7 @@ h3:hover {
 }
 
 #leaveGame {
-  display:block;
+  display:inline;
 }
 
 #playerList {
