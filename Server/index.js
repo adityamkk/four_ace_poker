@@ -27,10 +27,11 @@ class Game {
         this.gameDeck = new Deck(); //Deck of Cards used in game
         this.message = '';
         this.code = code;
+        this.hasGameBegun = false;
     }
 
     addPlayer (url) {
-        this.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 1000));
+        this.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 100));
         console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
         findGame(this.code).message = `${url.searchParams.get('name')} joined the game!`;
         return url.searchParams.get('name');
@@ -50,28 +51,37 @@ class Game {
     }
 
     //Begins a round
-    beginRound () {
-        this.gameDeck.shuffle();
+    beginRound (game) {
+        game.hasGameBegun = true;
+        game.message = '...';
+        for(var i = 0; i < game.allPlayers.length; i++) {
+            game.allPlayers[i].cards = [];
+        }
+        resetFoldStatus(game.code);
+        game.cardsOnBoard = [];
+        game.currRound = 0;
+        game.calledAmt = 2;
+        game.gameDeck.shuffle();
         // TESTING CASES
-        //this.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
+        //game.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
         //
         //small blind
-        console.log(smallBlindPos(this.code));
-        updateAmt(this.allPlayers[smallBlindPos(this.code)], ~~(this.minBlind/2)*(-1));
-        this.allPlayers[smallBlindPos(this.code)].currPaidAmt = 1;
-        updatePot(~~(this.minBlind/2),this.code);
+        console.log(smallBlindPos(game.code));
+        updateAmt(game.allPlayers[smallBlindPos(game.code)], ~~(game.minBlind/2)*(-1));
+        game.allPlayers[smallBlindPos(game.code)].currPaidAmt = 1;
+        updatePot(~~(game.minBlind/2),game.code);
         //big blind
-        updateAmt(this.allPlayers[bigBlindPos(this.code)], this.minBlind*(-1));
-        this.allPlayers[bigBlindPos(this.code)].currPaidAmt = 2;
-        updatePot(this.minBlind,this.code);
+        updateAmt(game.allPlayers[bigBlindPos(game.code)], game.minBlind*(-1));
+        game.allPlayers[bigBlindPos(game.code)].currPaidAmt = 2;
+        updatePot(game.minBlind,game.code);
         //deal cards
-        for(var i = 0; i < this.allPlayers.length; i++) {
-            this.gameDeck.deal(this.allPlayers[i],2);
+        for(var i = 0; i < game.allPlayers.length; i++) {
+            game.gameDeck.deal(game.allPlayers[i],2);
         }
-        this.currPlayer = recalPos(bigBlindPos(this.code)+1,this.code);
-        this.lastRaise = bigBlindPos(this.code);
+        game.currPlayer = recalPos(bigBlindPos(game.code)+1,game.code);
+        game.lastRaise = bigBlindPos(game.code);
 
-        console.log(`Round has started, ${this.allPlayers.at(this.currPlayer).name} is starting`);
+        console.log(`Round has started, ${game.allPlayers.at(game.currPlayer).name} is starting`);
     }
 
     //Has the current player do a specific action
@@ -102,24 +112,16 @@ class Game {
     //Ends a round and prepares for the next round
     endRound () {
         findWinner(this.code);
-        for(var i = 0; i < this.allPlayers.length; i++) {
-            this.allPlayers[i].cards = [];
-        }
         this.gameDeck = new Deck();
         this.allPlayers.at(this.winnerPos).amt += this.potAmt;
         this.potAmt = 0;
-        this.cardsOnBoard = [];
-        this.calledAmt = 2;
-        this.currRound = 0;
         rotateDealerPos(this.code);
-        resetFoldStatus(this.code);
         console.log('Round Has Ended, Next Round Starting');
         console.log('---------------------------------------------------------------------------------\n');
     }
 
     //Ends the entire game
     endGame () {
-        this.allPlayers = [];
         this.dealerPos = 0;
         this.currPlayer = 0;
         this.cardsOnBoard = [];
@@ -127,6 +129,14 @@ class Game {
         this.calledAmt = 2;
         this.currRound = 0;
         this.gameDeck = new Deck();
+        this.hasGameBegun = false;
+        this.winnerPos = 0;
+        resetFoldStatus(this.code);
+        for(const p of findGame(this.code).allPlayers) {
+            updateAmt(p, 1000-p.amt);
+            p.cards = [];
+            p.isBust = false;
+        }
         console.log('Game Has Ended');
     }
 
@@ -151,6 +161,17 @@ class Game {
         return clonedGame;
     }
 
+    returnSecureGameShowdown (req) {
+        let clonedGame = JSON.parse(JSON.stringify(this));
+        const dummyHand = [new Card('',''),new Card('','')]
+        for(let p of clonedGame.allPlayers) {
+            if(p.name != getName(req) && p.cards.length != 0 && p.hasFolded) {
+                p.cards = dummyHand;
+            }
+        }
+        return clonedGame;
+    }
+
 }
 
 //Player Class
@@ -166,6 +187,7 @@ class Player {
         this.currPaidAmt = -1;
         this.cards = [];
         this.hasFolded = false;
+        this.isBust = false;
     }
 
     //compares the hands of this player and that player. 
@@ -314,12 +336,16 @@ function recalPos(pos,code) {
 //Rotates the position of the dealer
 function rotateDealerPos(code) {
     findGame(code).dealerPos = recalPos(findGame(code).dealerPos+1,code);
+    while(findGame(code).allPlayers.at(findGame(code).dealerPos).isBust === true) {
+        findGame(code).dealerPos = recalPos(findGame(code).dealerPos+1,code);
+    }
+    return findGame(code).dealerPos;
 }
 
 //Rotates the current player's position
 function rotateCurrPos(code) {
     findGame(code).currPlayer = recalPos(findGame(code).currPlayer+1,code);
-    while(findGame(code).allPlayers.at(findGame(code).currPlayer).hasFolded === true) {
+    while(findGame(code).allPlayers.at(findGame(code).currPlayer).hasFolded === true || findGame(code).allPlayers.at(findGame(code).currPlayer).isBust === true) {
         findGame(code).currPlayer = recalPos(findGame(code).currPlayer+1,code);
     }
     return findGame(code).currPlayer;
@@ -371,7 +397,12 @@ function call(player,code) {
         rotateCurrPos(code);
         return findGame(code).calledAmt;
     } else {
-        return -1;
+        updateAmt(player, (-1)*player.amt + player.currPaidAmt);
+        updatePot(player.amt - player.currPaidAmt,code);
+        console.log(`updated amount: $${player.amt - player.currPaidAmt}`);
+        player.currPaidAmt = findGame(code).calledAmt;
+        rotateCurrPos(code);
+        return player.amt;
     }
 }
 
@@ -386,8 +417,13 @@ function raise(player, amt,code) {
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
-    } else {
-        return -1;
+    } else if(amt <= player.amt) {
+        updateAmt(player, (-1)*player.amt);
+        updatePot(player.amt , code);
+        console.log(`updated amount: $${player.amt}`);
+        player.currPaidAmt = findGame(code).calledAmt;
+        rotateCurrPos(code);
+        return player.amt;
     }
 }
 
@@ -409,7 +445,7 @@ function updateRoundStatus(code) {
     }
     for(const p of findGame(code).allPlayers) {
         //console.log( `default value:  ${q.currPaidAmt} , currPaidAmt:  ${p.currPaidAmt}`);
-        if(!p.hasFolded && (p.currPaidAmt < 0 || q.currPaidAmt != p.currPaidAmt)) {
+        if(!p.hasFolded && !p.isBust && (p.currPaidAmt < 0 || q.currPaidAmt != p.currPaidAmt)) {
             areEqualized = false;
         }
     }
@@ -433,7 +469,7 @@ function startNewRound(code) {
     switch(findGame(code).currRound) {
         case 1: for(let i = 0; i < 3; i++) {showCard(code);}
                 console.log(`3 cards shown (flop)`);
-                findGame(code).message = '';
+                findGame(code).message = '...';
                 break;
         case 2: showCard(code);
                 console.log(`1 card shown (turn)`);
@@ -441,10 +477,10 @@ function startNewRound(code) {
         case 3: showCard(code);
                 console.log(`1 card shown (river)`);
                 break;
-        case 4: findGame(code).currRound = 0;
-                console.log(`Last round over, time for the showdown!`);
+        case 4: console.log(`Last round over, time for the showdown!`);
                 findGame(code).endRound();
-                findGame(code).beginRound();
+                checkIfBust(code);
+                setTimeout(findGame(code).beginRound,3000,findGame(code));
     }
 }
 
@@ -453,7 +489,7 @@ function startNewRound(code) {
 function checkFoldConditions(code) {
     let countRemPlayers = findGame(code).allPlayers.length;
     for(const p of findGame(code).allPlayers) {
-        if(p.hasFolded === true) {countRemPlayers--;}
+        if(p.hasFolded === true || p.isBust) {countRemPlayers--;}
     }
     if(countRemPlayers === 1) {
         for(let i = 0; i < findGame(code).allPlayers.length; i++) {
@@ -462,11 +498,21 @@ function checkFoldConditions(code) {
                 console.log(`Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
                 findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
                 findGame(code).endRound();
-                findGame(code).beginRound();
+                checkIfBust(code);
+                setTimeout(findGame(code).beginRound,3000,findGame(code));
                 i = findGame(code).allPlayers.length + 1;
             }
         }
+    }
+}
 
+//Check if anyone busted, if so, prevent them from playing
+function checkIfBust(code) {
+    for(const p of findGame(code).allPlayers) {
+        if(p.amt <= 0) {
+            p.isBust = true;
+            findGame(code).message = `${p.name} has busted!`;
+        }
     }
 }
 
@@ -485,7 +531,7 @@ function findWinner(code) {
     }
     let foundWinner = false;
     players.forEach(function(player,i) {
-        if(!player.hasFolded && !foundWinner) {
+        if(!player.hasFolded && !player.isBust && !foundWinner) {
             foundWinner = true;
             findGame(code).winnerPos = i;
             declareWinner(player,code);
@@ -503,6 +549,24 @@ function declareWinner(player,code) {
         player.currPaidAmt = -1;
     });
     findGame(code).potAmt = 0;
+    checkTrueWinner(code);
+}
+
+function checkTrueWinner(code) {
+    let countActivePlayers = 0;
+    let wp = '';
+    for(const p of findGame(code).allPlayers) {
+        if(p.isBust) {
+            countActivePlayers++;
+        } else {
+            wp = p;
+        }
+    }
+    if(countActivePlayers === 1) {
+        console.log(`${wp.name} is the winner of this game!`);
+        findGame(code).message = `${wp.name} is the winner of this game!`;
+        setTimeout(findGame(code).endGame, 4000);
+    }
 }
 
 /*
@@ -780,12 +844,12 @@ const Hands = {
 
 //Map of Games
 const games = new Map();
-games.set(0,new Game());
+games.set(0,new Game(0));
 
 //Finds and returns a specified Game from the games map, and returns the one at key 0 if not found
 function findGame(reqCode) {
     try {
-        if(games.get(reqCode) != undefined) {return games.get(reqCode)};
+        if(games.get(reqCode) != undefined && games.get(reqCode) != null) {return games.get(reqCode)};
     } catch {
         return games.get(0);
     }
@@ -804,6 +868,7 @@ function newMultiGame(url) {
     }
     games.set(code, new Game(code));
     const name = findGame(code).addPlayer(url);
+    console.log(name);
     return [code,name];
 }
 
@@ -853,6 +918,7 @@ const server = http.createServer((req, res) => {
     switch(url.pathname) {
         //Creates a new multiplayer game and adds the creator to the list of players
         case '/newMultiGame' :
+            res.setHeader('Set-Cookie',[`code=; path=/`,`name=; path=/`]);
             const [code,name] = newMultiGame(url);
             res.setHeader('Set-Cookie',[`code=${code}; path=/`,`name=${name}; path=/`]);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -862,7 +928,7 @@ const server = http.createServer((req, res) => {
 
         //Adds a player to the game, with a specifc name and amount
         case '/addPlayer' :
-            if(!doesNameExist(url)) {
+            if(!doesNameExist(url) && !findGame(getCodeFromUrl(url)).hasGameBegun) {
                 const pname = findGame(getCodeFromUrl(url)).addPlayer(url);
                 res.setHeader('Set-Cookie',[`code=${getCodeFromUrl(url)}; path=/`,`name=${pname}; path=/`]);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -876,14 +942,20 @@ const server = http.createServer((req, res) => {
         
         //Refreshes the gamestate
         case '/gamestate' :
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req))); 
+            if(findGame(getCode(req)).currRound >= 4) {
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.write(JSON.stringify(findGame(getCode(req)).returnSecureGameShowdown(req))); 
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));
+            }
             res.end();
             break;
         
         //Removes a player from the game, based on their name
         case '/removePlayer' :
             findGame(getCode(req)).removePlayer(url);
+            res.setHeader('Set-Cookie',[`code=; path=/`,`name=; path=/`]);
             res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
             res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();
@@ -891,7 +963,7 @@ const server = http.createServer((req, res) => {
 
         //Begins a round
         case '/beginRound' :
-            findGame(getCode(req)).beginRound();
+            findGame(getCode(req)).beginRound(findGame(getCode(req)));
             res.writeHead(200, { 'Content-Type': 'application/json' , 'Access-Control-Allow-Origin': '*'});
             res.write(JSON.stringify(findGame(getCode(req)).returnSecureGame(req)));  
             res.end();

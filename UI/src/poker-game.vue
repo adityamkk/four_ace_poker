@@ -1,26 +1,28 @@
 <template>
 <div>
-  <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button>
   <div id="info">
-    <h2 id="code">Code : {{code}}</h2>
-    <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
-  </div>
-  <h1 id="small_title">Four Ace Poker</h1>
-  <div id="playerBox" style="text-align:center">
+    <div style="float:right">
+      <h2 id="code">Invite Code : {{code}}</h2>
+      <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
+    </div>
+  </div><br>
+  <h1 id="small_title">Four Ace Poker</h1><br>
+  <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button><br>
+  <div id="playerBox">
     
     <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; text-align:center; margin:1%">
       <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
     </div><br>
 
-    <h2 style="text-align:center">{{message}}</h2><br>
+    <h2 id="message" style="text-align:center">{{message}}</h2><br>
     <div style="display:inline-block">
-      <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
+      <img alt="Poker Chips" src="./assets/coin.png" width="170px">
       <h1 id="potAmt">${{potAmt}}</h1>
     </div><br>
 
     <div style="display:inline-flex">
-      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
       <h2>Current Bet: ${{ calledAmt }}</h2>
+      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
     </div><br>
 
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
@@ -32,7 +34,7 @@
         </div>
       </div> <br>
       <div v-for="card in player.cards" :key="card.id" id="playerCards" style="display: inline-block">
-        <vue-playing-card :signature="getCard(card)" :cover="!isThisPlayer(player)" width="100"></vue-playing-card>
+        <vue-playing-card :signature="getCard(card)" width="100"></vue-playing-card>
       </div><br>
       <div :class="isThisPlayerAndMyTurn(player)">
         <button v-on:click="call" id="call"> {{callOrCheck()}} </button>
@@ -43,6 +45,8 @@
     </div><br>
 
     <!--
+      :cover="!isThisPlayer(player)"
+
     <h2>Developer Tools</h2>
     <div>
       <button v-on:click="getGameState" style="margin-right:50px">Get GameState</button>
@@ -142,7 +146,6 @@ export default {
       }
     },  
     hideStartButton () {
-      this.hasGameBegun = true;
       document.getElementById('startGame').style.display = 'none';
     },
     refresh() {
@@ -158,7 +161,7 @@ export default {
       .then(function (response) {
        // handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         // handle error
@@ -175,7 +178,7 @@ export default {
         //handle success
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -190,10 +193,11 @@ export default {
       axios.get(`/removePlayer?name=${Cookie.get("name")}`)
       .then(function (response) {
         //handle success
+        clearInterval(vm.timer);
         router.push('/');
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -210,7 +214,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -227,7 +231,7 @@ export default {
         //handle success
         console.log(response.data);
         //console.log(`${vm.allPlayers.at(vm.currPlayer).amt}`);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -244,7 +248,7 @@ export default {
         //handle success
         document.getElementsByClassName('raiseamt').innerHTML = '';
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -260,7 +264,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -276,7 +280,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -292,7 +296,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -331,6 +335,7 @@ body {
 
 button {
   font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
+  font-size: 13px;
   padding: 10px;
   margin: 5px;
   background-color: #ff8800;
@@ -351,16 +356,15 @@ button:active {
 }
 
 .mainbtn {
-  float:left;
   display:inline;
   width:120px;
 }
 
 #small_title {
   text-align:center;
-  display:block;
   font-size: 75px;
   font-weight: 400;
+  margin:10px;
 }
 
 input {
@@ -378,6 +382,7 @@ input:hover {
 
 h1 {
   font-family:'Ultra','Montserrat',sans-serif;
+  text-align:center;
 }
 
 h2 {
@@ -417,21 +422,25 @@ h3:hover {
 }
 
 #potAmt {
+  margin-top:0px;
   padding-top:0px;
-  padding-bottom:50px;
-}
-
-#code {
-  text-align:right;
-  display:inline-flex;
+  padding-bottom:10px;
+  margin-bottom:3px;
 }
 
 #startGame {
   display:none;
+  background-color:#EC7063;
+  transition: 0.5s;
+}
+
+#startGame:hover {
+  background-color:#E74C3C ;
+  transition: 0.5s;
 }
 
 #startGame[is-first-player="true"] {
-  display:inline;
+  display:inline-block;
 }
 
 #startGame[is-first-player="false"] {
@@ -439,13 +448,32 @@ h3:hover {
 }
 
 #leaveGame {
-  text-align:right;
   display:inline-flex;
+  background-color: #BB8FCE;
+  transition: 0.5s;
+}
+
+#leaveGame:hover {
+  background-color: #A569BD;
+  transition: 0.5s;
+}
+
+#code {
+  font-size: 13px;
+  display:inline-flex;
+  margin:5px;
+  padding:10px;
 }
 
 #info {
-  float:right;
   vertical-align: middle;
+}
+
+#message {
+  font-weight:200;
+  font-style:oblique;
+  border-style:dotted;
+  display:inline-block;
 }
 
 #playerList {
