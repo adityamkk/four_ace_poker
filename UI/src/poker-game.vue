@@ -1,9 +1,28 @@
 <template>
 <div>
   <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button>
-  <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
-  <h2 id="code">Code : {{code}}</h2>
-  <div id="playerBox">
+  <div id="info">
+    <h2 id="code">Code : {{code}}</h2>
+    <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
+  </div>
+  <h1 id="small_title">Four Ace Poker</h1>
+  <div id="playerBox" style="text-align:center">
+    
+    <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; text-align:center; margin:1%">
+      <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
+    </div><br>
+
+    <h2 style="text-align:center">{{message}}</h2><br>
+    <div style="display:inline-block">
+      <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
+      <h1 id="potAmt">${{potAmt}}</h1>
+    </div><br>
+
+    <div style="display:inline-flex">
+      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+      <h2>Current Bet: ${{ calledAmt }}</h2>
+    </div><br>
+
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
       <div style="display:inline-flex">
         <img alt="Icon" :src="assignIcon(player)" width="100px" height="100px" class="userIcon" :id="player.id">
@@ -22,19 +41,8 @@
         <button v-on:click="fold" id="fold"> Fold </button>
       </div>
     </div><br>
-    <div style="display:inline-block">
-      <img alt="Poker Chips" src="./assets/poker_chips.png" width="170px">
-      <h1 id="potAmt">${{potAmt}}</h1>
-    </div><br>
-    <div style="display:inline-flex">
-      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
-      <h2>Current Bet: ${{ calledAmt }}</h2>
-    </div><br>
-    <h2>{{message}}</h2><br>
-    <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; margin:1%">
-      <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
-    </div>
 
+    <!--
     <h2>Developer Tools</h2>
     <div>
       <button v-on:click="getGameState" style="margin-right:50px">Get GameState</button>
@@ -47,6 +55,7 @@
       <button v-on:click="endRound">End Round</button>
       <button v-on:click="endGame">End Game</button>
     </div>
+    -->
   </div>
 </div>
 </template>
@@ -76,7 +85,8 @@ export default {
     gameDeck : {},
     message : '',
     timer : '',
-    code: -1
+    code: -1,
+    hasGameBegun: false
   }),
   created () {
     this.getGameState();
@@ -121,7 +131,7 @@ export default {
     },
     isThisPlayerAndMyTurn (player) {
       const vm = this;
-      return ((vm.isThisPlayer(player) && vm.isMyTurn()) ? ('yesDisplay') : ('noDisplay'));
+      return ((vm.isThisPlayer(player) && vm.isMyTurn() && vm.hasGameBegun) ? ('yesDisplay') : ('noDisplay'));
     },
     assignIcon (player) {
       const vm = this;
@@ -132,6 +142,7 @@ export default {
       }
     },  
     hideStartButton () {
+      this.hasGameBegun = true;
       document.getElementById('startGame').style.display = 'none';
     },
     refresh() {
@@ -299,9 +310,11 @@ export default {
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ultra&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Stint+Ultra+Condensed&family=Stint+Ultra+Expanded&family=Ultra&display=swap');
 
 #app {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -310,14 +323,14 @@ export default {
 
 body {
   text-align: center;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
   padding:5px;
   margin:0;
   background-image: url("./assets/felt_table.jpg");
 }
 
 button {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
   padding: 10px;
   margin: 5px;
   background-color: #ff8800;
@@ -343,8 +356,15 @@ button:active {
   width:120px;
 }
 
+#small_title {
+  text-align:center;
+  display:block;
+  font-size: 75px;
+  font-weight: 400;
+}
+
 input {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
   padding: 10px;
   margin: 5px;
   border-style: none;
@@ -354,6 +374,10 @@ input {
 
 input:hover {
   transition: 0.5s;
+}
+
+h1 {
+  font-family:'Ultra','Montserrat',sans-serif;
 }
 
 h2 {
@@ -399,7 +423,7 @@ h3:hover {
 
 #code {
   text-align:right;
-  display:flex;
+  display:inline-flex;
 }
 
 #startGame {
@@ -415,7 +439,13 @@ h3:hover {
 }
 
 #leaveGame {
-  display:inline;
+  text-align:right;
+  display:inline-flex;
+}
+
+#info {
+  float:right;
+  vertical-align: middle;
 }
 
 #playerList {

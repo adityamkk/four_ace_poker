@@ -1,13 +1,42 @@
 <template>
 <div>
     <div id="title">
-        <h1>Poker!</h1>
-        <vue-playing-card signature="ah" width="150"></vue-playing-card>
-        <vue-playing-card signature="as" width="150"></vue-playing-card>
-        <vue-playing-card signature="ad" width="150"></vue-playing-card>
-        <vue-playing-card signature="ac" width="150"></vue-playing-card>
+        <h1 id="title_text">Four Ace Poker</h1>
+        <vue-playing-card signature="ah" width="100"></vue-playing-card>
+        <vue-playing-card signature="as" width="100"></vue-playing-card>
+        <vue-playing-card signature="ad" width="100"></vue-playing-card>
+        <vue-playing-card signature="ac" width="100"></vue-playing-card>
     </div><br>
     <div id="options">
+        <h2>Multiplayer</h2>
+        <div style="display: inline-flex">
+            <div id="create">
+                <h2>Create New Game</h2>
+                <div style="display:inline-flex">
+                    <div>
+                        <h3>Name</h3>
+                        <input type="text" id="cname" name="cname">
+                    </div>
+                    <button v-on:click="multiPlayerNewGame" id="cbutton">Create</button>
+                </div>
+            </div>
+            <div id="join">
+                <h2>Join Game</h2>
+                <div style="display:inline-flex">
+                    <div>
+                        <h3>Name</h3>
+                        <input type="text" id="jname" name="jname">
+                    </div>
+                    <div>
+                        <h3>Code</h3>
+                        <input type="text" id="jcode" name="jcode">
+                    </div>
+                    <button v-on:click="joinGame" id="jbutton">Join</button> 
+                </div>
+                <h4 id="error" style="display:none">Name Invalid, Please Try Again</h4>
+            </div>
+        </div>
+        <h2>Singleplayer</h2>
         <div id="single">
             <h2>Single Player</h2>
             <div style="display:inline-flex;">
@@ -29,31 +58,6 @@
                 </div>
                 <button id="sbutton">Start</button> 
             </div>
-        </div>
-        <div id="create">
-            <h2>Create New Game</h2>
-            <div style="display:inline-flex">
-                <div>
-                    <h3>Name</h3>
-                    <input type="text" id="cname" name="cname">
-                </div>
-                <button v-on:click="multiPlayerNewGame" id="cbutton">Create</button>
-            </div>
-        </div>
-        <div id="join">
-            <h2>Join A Game</h2>
-            <div style="display:inline-flex">
-                <div>
-                    <h3>Name</h3>
-                    <input type="text" id="jname" name="jname">
-                </div>
-                <div>
-                    <h3>Code</h3>
-                    <input type="text" id="jcode" name="jcode">
-                </div>
-                <button v-on:click="joinGame" id="jbutton">Join</button> 
-            </div>
-            <h4 id="error" style="display:none">Name Invalid, Please Try Again</h4>
         </div>
     </div>
 </div>
@@ -110,9 +114,11 @@
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ultra&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Stint+Ultra+Condensed&family=Stint+Ultra+Expanded&family=Ultra&display=swap');
 
 #app {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -122,7 +128,7 @@
 body {
   text-align: center;
   color: #ffffff;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Stint Ultra Expanded', sans-serif;
   padding:5px;
   margin:0;
   background-image: url("./assets/felt_table.jpg");
@@ -130,7 +136,7 @@ body {
 
 input, button, select {
     color: #ffffff;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Stint Ultra Expanded', sans-serif;
     border-radius: 100px;
     border-style: none;
     padding: 10px;
@@ -143,6 +149,8 @@ input {
 }
 
 button {
+    color: #222222;
+    font-weight: 600;
     width: 100px;
 }
 
@@ -151,6 +159,7 @@ select {
 }
 
 h1 {
+    font-family: 'Ultra', 'Montserrat', sans-serif;
     color:#ffffff;
     padding: 25px;
     margin: 5px;
@@ -170,9 +179,15 @@ h4 {
 }
 
 #title {
+    font-family:'Ultra', 'Montserrat', sans-serif;
     display: inline-block;
     padding: 10px;
     margin: 10px;
+}
+
+#title_text {
+    font-size: 100px;
+    font-weight: 100;
 }
 
 #options {
