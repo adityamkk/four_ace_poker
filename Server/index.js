@@ -110,8 +110,8 @@ class Game {
     }
 
     //Ends a round and prepares for the next round
-    endRound () {
-        findWinner(this.code);
+    endRound (byFolding) {
+        findWinner(this.code,byFolding);
         this.gameDeck = new Deck();
         this.allPlayers.at(this.winnerPos).amt += this.potAmt;
         this.potAmt = 0;
@@ -417,7 +417,7 @@ function raise(player, amt,code) {
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
-    } else if(amt <= player.amt) {
+    } else if(amt > player.amt) {
         updateAmt(player, (-1)*player.amt);
         updatePot(player.amt , code);
         console.log(`updated amount: $${player.amt}`);
@@ -478,9 +478,9 @@ function startNewRound(code) {
                 console.log(`1 card shown (river)`);
                 break;
         case 4: console.log(`Last round over, time for the showdown!`);
-                findGame(code).endRound();
+                findGame(code).endRound(false);
                 checkIfBust(code);
-                setTimeout(findGame(code).beginRound,3000,findGame(code));
+                setTimeout(findGame(code).beginRound,5000,findGame(code));
     }
 }
 
@@ -497,9 +497,9 @@ function checkFoldConditions(code) {
                 findGame(code).winnerPos = i;
                 console.log(`Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
                 findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
-                findGame(code).endRound();
+                findGame(code).endRound(true);
                 checkIfBust(code);
-                setTimeout(findGame(code).beginRound,3000,findGame(code));
+                setTimeout(findGame(code).beginRound,4000,findGame(code));
                 i = findGame(code).allPlayers.length + 1;
             }
         }
@@ -509,7 +509,7 @@ function checkFoldConditions(code) {
 //Check if anyone busted, if so, prevent them from playing
 function checkIfBust(code) {
     for(const p of findGame(code).allPlayers) {
-        if(p.amt <= 0) {
+        if(p.amt <= 0 && !p.isBust) {
             p.isBust = true;
             findGame(code).message = `${p.name} has busted!`;
         }
@@ -517,7 +517,7 @@ function checkIfBust(code) {
 }
 
 //Finds the player with the strongest hand, and declares them the winner
-function findWinner(code) {
+function findWinner(code,byFolding) {
     let highPos = 0;
     let players = copyArr(findGame(code).allPlayers);
     for(let i = 0; i < players.length; i++) {
@@ -534,16 +534,21 @@ function findWinner(code) {
         if(!player.hasFolded && !player.isBust && !foundWinner) {
             foundWinner = true;
             findGame(code).winnerPos = i;
-            declareWinner(player,code);
+            declareWinner(player,code,byFolding);
             return player;
         }
     });
 }
 
 //Gives the entire amount in the pot to the winning player
-function declareWinner(player,code) {
-    console.log(`${player.name} won the round with a ${player.handType(code)}!`);
-    findGame(code).message = `${player.name} won the round with a ${player.handType(code)}!`;
+function declareWinner(player,code,byFolding) {
+    if(byFolding) {
+        console.log(`${player.name} won the round since everyone else folded!`);
+        findGame(code).message = `${player.name} won the round since everyone else folded!`;
+    } else {
+        console.log(`${player.name} won the round with a ${player.handType(code)}!`);
+        findGame(code).message = `${player.name} won the round with a ${player.handType(code)}!`;
+    }
     updateAmt(player, (findGame(code).potAmt));
     findGame(code).allPlayers.forEach(function(player) {
         player.currPaidAmt = -1;

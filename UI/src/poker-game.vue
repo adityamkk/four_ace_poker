@@ -61,6 +61,7 @@
     </div>
     -->
   </div>
+  
 </div>
 </template>
 
@@ -557,5 +558,12 @@ h3:hover {
 
 .userIcon {
   border-radius: 100px;
+}
+
+#foot {
+  vertical-align:bottom;
+  color:#F5B7B1;
+  padding-bottom:0;
+  margin-bottom:0;
 }
 </style>
