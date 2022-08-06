@@ -91,16 +91,16 @@ class Game {
         console.log(`${action} is used by the player \"${player.name}\"`);
         switch(action) {
             case 'call' :
-                findGame(this.code).message = `${player.name} called`;
                 call(player,this.code);
+                findGame(this.code).message = `${player.name} called`;
                 break;
             case 'raise' :
-                findGame(this.code).message = `${player.name} raised ${parseInt(url.searchParams.get('amt'))}`;
-                raise(player, parseInt(url.searchParams.get('amt')),this.code);
+                const amt = raise(player, parseInt(url.searchParams.get('amt')),this.code);
+                findGame(this.code).message = `${player.name} raised ${amt}`;
                 break;
             case 'fold' :
-                findGame(this.code).message = `${player.name} folded`;
                 fold(player,this.code);
+                findGame(this.code).message = `${player.name} folded`;
                 break;
             default:
                 console.log(`Invalid Action ${action}`);
@@ -372,12 +372,24 @@ function showCard(code) {
 
 //Finds and returns the position of the small blind
 function smallBlindPos(code) {
-    return recalPos(findGame(code).dealerPos+1,code);
+    let i = 1;
+    while(findGame(code).allPlayers.at(recalPos(findGame(code).dealerPos+i,code)).isBust) {
+        i++;
+    }
+    return recalPos(findGame(code).dealerPos+i,code);
 }
 
 //Finds and returns the position of the big blind
 function bigBlindPos(code) {
-    return recalPos(findGame(code).dealerPos+2,code);
+    let i = 1; 
+    let foundSmallBlind = false;
+    while(!(!findGame(code).allPlayers.at(recalPos(findGame(code).dealerPos+i,code)).isBust && foundSmallBlind)) {
+        i++;
+        if(!findGame(code).allPlayers.at(recalPos(findGame(code).dealerPos+i,code)).isBust) {
+            foundSmallBlind = true;
+        }
+    }
+    return recalPos(findGame(code).dealerPos+i,code);
 }
 
 //Updates the amount in the pot
@@ -409,21 +421,51 @@ function call(player,code) {
 //On their turn, has the player do the "raise" action, which makes them pay a certain specified amount, as long as it is greater than the standard
 function raise(player, amt,code) {
     console.log(`${player.name} raised $${amt}`);
-    if(amt > findGame(code).calledAmt && amt <= player.amt) {
-        findGame(code).calledAmt = amt;
+    if(amt > findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
+        findGame(code).calledAmt += amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
         console.log(`updated amount: $${amt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
-    } else if(amt > player.amt) {
-        updateAmt(player, (-1)*player.amt);
-        updatePot(player.amt , code);
-        console.log(`updated amount: $${player.amt}`);
+    } else if(amt > player.amt && amt > findGame(code).calledAmt && amt > findGame(code).minBlind) {
+        amt = player.amt;
+        findGame(code).calledAmt += amt;
+        updateAmt(player, (-1)*amt);
+        updatePot(amt , code);
+        console.log(`updated amount: $${amt}`);
+        player.currPaidAmt = amt;
+        rotateCurrPos(code);
+        return amt;
+    } else if(amt > player.amt && amt <= findGame(code).calledAmt) {
+        amt = player.amt;
+        updateAmt(player, (-1)*amt);
+        updatePot(amt , code);
+        console.log(`updated amount: $${amt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
-        return player.amt;
+        return amt;
+    } else if(amt > findGame(code).calledAmt && amt <= findGame(code).minBlind && amt <= player.amt) {
+        findGame(code).calledAmt += findGame(code).minBlind;
+        updateAmt(player, (-1)*findGame(code).minBlind);
+        updatePot(findGame(code).minBlind , code);
+        console.log(`updated amount: $${findGame(code).minBlind}`);
+        player.currPaidAmt = findGame(code).calledAmt;
+        rotateCurrPos(code);
+        return findGame(code).minBlind;
+    } else if(amt <= findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
+        amt = findGame(code).calledAmt + 1;
+        findGame(code).calledAmt += amt;
+        updateAmt(player, (-1)*amt);
+        updatePot(amt , code);
+        console.log(`updated amount: $${amt}`);
+        player.currPaidAmt = findGame(code).calledAmt;
+        rotateCurrPos(code);
+        return amt;
+    } else {
+        console.log('Try Again');
+        return -1;
     }
 }
 

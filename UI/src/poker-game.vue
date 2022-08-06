@@ -6,23 +6,27 @@
       <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
     </div>
   </div><br>
-  <h1 id="small_title">Four Ace Poker</h1><br>
+  <h1 id="small_title">Four Ace Poker</h1>
   <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button><br>
   <div id="playerBox">
     
     <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; text-align:center; margin:1%">
-      <vue-playing-card :signature="getCard(card)" width="150"></vue-playing-card>
-    </div><br>
-
-    <h2 id="message" style="text-align:center">{{message}}</h2><br>
-    <div style="display:inline-block">
-      <img alt="Poker Chips" src="./assets/coin.png" width="170px">
-      <h1 id="potAmt">${{potAmt}}</h1>
+      <vue-playing-card :signature="getCard(card)" width="120"></vue-playing-card>
     </div><br>
 
     <div style="display:inline-flex">
-      <h2>Current Bet: ${{ calledAmt }}</h2>
-      <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+      <div style="display:inline; vertical-align:middle">
+        <img id="chips" alt="Poker Chips" src="./assets/coin.png" width="140px">
+        <h1 id="potAmt">${{potAmt}}</h1>
+      </div>
+
+      <div style="display:inline; vertical-align:middle">
+        <div style="display:inline-flex; margin-bottom:3px; padding-bottom:3px">
+          <h2>Current Bet: ${{ calledAmt }}</h2>
+          <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+        </div>
+        <h2 id="message" style="text-align:center; display:block">{{message}}</h2>
+      </div>
     </div><br>
 
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
@@ -43,6 +47,7 @@
         <button v-on:click="fold" id="fold"> Fold </button>
       </div>
     </div><br>
+    
 
     <!--
       :cover="!isThisPlayer(player)"
@@ -363,9 +368,10 @@ button:active {
 
 #small_title {
   text-align:center;
-  font-size: 75px;
+  display:block;
+  font-size: 40px;
   font-weight: 400;
-  margin:10px;
+  margin-bottom:0px;
 }
 
 input {
@@ -388,7 +394,8 @@ h1 {
 
 h2 {
   padding: 15px;
-  margin: 10px;
+  margin: 3px;
+  font-size:20px;
   color: #ffffff;
   border-style: none;
   border-radius: 25px;
@@ -422,7 +429,14 @@ h3:hover {
   border-radius: 25px;
 }
 
+#chips {
+  display:inline-block;
+  vertical-align:middle;
+}
+
 #potAmt {
+  display:inline-block;
+  vertical-align:middle;
   margin-top:0px;
   padding-top:0px;
   padding-bottom:10px;
@@ -478,6 +492,7 @@ h3:hover {
 }
 
 #playerList {
+  margin-top:0px;
   padding: 20px;
   border-style: none;
   border-radius: 25px;
