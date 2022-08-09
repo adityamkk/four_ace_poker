@@ -8,7 +8,7 @@
         <vue-playing-card signature="ac" width="100"></vue-playing-card>
     </div><br>
     <div id="options">
-        <h2>Multiplayer</h2>
+        <h2 class="subtitle">Multiplayer</h2>
         <div style="display: inline-flex">
             <div id="create">
                 <h2>Create New Game</h2>
@@ -33,12 +33,12 @@
                     </div>
                     <button v-on:click="joinGame" id="jbutton">Join</button> 
                 </div>
-                <h4 id="error" style="display:none">Name Invalid, Please Try Again</h4>
+                <h4 id="error" style="display:none">Name or Code Invalid, Please Try Again</h4>
             </div>
         </div>
-        <h2>Singleplayer</h2>
+        <h2 class="subtitle">Singleplayer</h2>
         <div id="single">
-            <h2>Single Player</h2>
+            <h2>Single Player (Coming Soon!)</h2>
             <div style="display:inline-flex;">
                 <div>
                     <h3>Name</h3>
@@ -188,6 +188,10 @@ h4 {
 #title_text {
     font-size: 100px;
     font-weight: 100;
+}
+
+.subtitle {
+    text-decoration: underline dotted;
 }
 
 #options {

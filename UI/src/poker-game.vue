@@ -1,33 +1,34 @@
 <template>
 <div>
-  <div id="info">
-    <div style="float:right">
+  <div id="info" style="display:block">
+    <div style="float:right; display:inline-block">
       <h2 id="code">Invite Code : {{code}}</h2>
       <button v-on:click="removePlayer" class="mainbtn" id="leaveGame">Leave Game</button>
     </div>
   </div><br>
-  <h1 id="small_title">Four Ace Poker</h1>
+  <h1 id="small_title" style="display:block">Four Ace Poker</h1><br>
   <button v-on:click="beginRound" class="mainbtn" id="startGame" :is-first-player="isThisPlayer(allPlayers.at(0))">Start Game</button><br>
   <div id="playerBox">
     
-    <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; text-align:center; margin:1%">
+    <div v-for="card in cardsOnBoard" :key="card.id" style="display: inline-block; text-align:center; margin:1%; margin-top:5px">
       <vue-playing-card :signature="getCard(card)" width="120"></vue-playing-card>
     </div><br>
 
-    <div style="display:inline-flex">
+    <div style="display:inline-flex; vertical-align:middle">
       <div style="display:inline; vertical-align:middle">
         <img id="chips" alt="Poker Chips" src="./assets/coin.png" width="140px">
-        <h1 id="potAmt">${{potAmt}}</h1>
       </div>
 
       <div style="display:inline; vertical-align:middle">
-        <div style="display:inline-flex; margin-bottom:3px; padding-bottom:3px">
-          <h2>Current Bet: ${{ calledAmt }}</h2>
-          <h2>Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+        <h1 id="potAmt" style="display:block;">${{potAmt}}</h1>
+        <div style="display:block; margin-bottom:3px; padding-bottom:3px">
+          <h2 style="margin-bottom:1px; padding-bottom:1px;">Current Bet: ${{ calledAmt }}</h2>
+          <h2 style="margin-top:1px; padding-top:1px;">Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
         </div>
-        <h2 id="message" style="text-align:center; display:block">{{message}}</h2>
       </div>
     </div><br>
+
+    <h2 id="message" style="text-align:center; display:inline-block">{{message}}</h2><br>
 
     <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
       <div style="display:inline-flex">
@@ -141,7 +142,8 @@ export default {
     },
     isThisPlayerAndMyTurn (player) {
       const vm = this;
-      return ((vm.isThisPlayer(player) && vm.isMyTurn() && vm.hasGameBegun) ? ('yesDisplay') : ('noDisplay'));
+      let displayOptions = ((vm.isThisPlayer(player) && vm.isMyTurn() && vm.hasGameBegun) ? ('yesDisplay') : ('noDisplay'));
+      return displayOptions;
     },
     assignIcon (player) {
       const vm = this;
@@ -371,7 +373,10 @@ button:active {
   display:block;
   font-size: 40px;
   font-weight: 400;
+  padding-bottom:0px;
+  padding-top:0px;
   margin-bottom:0px;
+  margin-top:30px;
 }
 
 input {
@@ -481,7 +486,8 @@ h3:hover {
 }
 
 #info {
-  vertical-align: middle;
+  display:block;
+  text-align:center;
 }
 
 #message {

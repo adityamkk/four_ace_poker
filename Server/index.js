@@ -421,15 +421,15 @@ function call(player,code) {
 //On their turn, has the player do the "raise" action, which makes them pay a certain specified amount, as long as it is greater than the standard
 function raise(player, amt,code) {
     console.log(`${player.name} raised $${amt}`);
-    if(amt > findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
-        findGame(code).calledAmt += amt;
+    if(amt >= findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
+        findGame(code).calledAmt = amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
         console.log(`updated amount: $${amt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
-    } else if(amt > player.amt && amt > findGame(code).calledAmt && amt > findGame(code).minBlind) {
+    } else if(amt > player.amt && amt >= findGame(code).calledAmt && amt > findGame(code).minBlind) {
         amt = player.amt;
         findGame(code).calledAmt += amt;
         updateAmt(player, (-1)*amt);
@@ -438,25 +438,8 @@ function raise(player, amt,code) {
         player.currPaidAmt = amt;
         rotateCurrPos(code);
         return amt;
-    } else if(amt > player.amt && amt <= findGame(code).calledAmt) {
+    } else if(amt > player.amt && amt < findGame(code).calledAmt) {
         amt = player.amt;
-        updateAmt(player, (-1)*amt);
-        updatePot(amt , code);
-        console.log(`updated amount: $${amt}`);
-        player.currPaidAmt = findGame(code).calledAmt;
-        rotateCurrPos(code);
-        return amt;
-    } else if(amt > findGame(code).calledAmt && amt <= findGame(code).minBlind && amt <= player.amt) {
-        findGame(code).calledAmt += findGame(code).minBlind;
-        updateAmt(player, (-1)*findGame(code).minBlind);
-        updatePot(findGame(code).minBlind , code);
-        console.log(`updated amount: $${findGame(code).minBlind}`);
-        player.currPaidAmt = findGame(code).calledAmt;
-        rotateCurrPos(code);
-        return findGame(code).minBlind;
-    } else if(amt <= findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
-        amt = findGame(code).calledAmt + 1;
-        findGame(code).calledAmt += amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
         console.log(`updated amount: $${amt}`);
@@ -465,7 +448,7 @@ function raise(player, amt,code) {
         return amt;
     } else {
         console.log('Try Again');
-        return -1;
+        return ' an invalid amount, try again';
     }
 }
 
@@ -520,9 +503,12 @@ function startNewRound(code) {
                 console.log(`1 card shown (river)`);
                 break;
         case 4: console.log(`Last round over, time for the showdown!`);
-                findGame(code).endRound(false);
+                const isThereWinner = findGame(code).endRound(false);
+                if(isThereWinner) {return;}
                 checkIfBust(code);
-                setTimeout(findGame(code).beginRound,5000,findGame(code));
+                const winner = checkTrueWinner(code);
+                if(winner) {return;}
+                setTimeout(findGame(code).beginRound,7000,findGame(code));
     }
 }
 
@@ -541,7 +527,7 @@ function checkFoldConditions(code) {
                 findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
                 findGame(code).endRound(true);
                 checkIfBust(code);
-                setTimeout(findGame(code).beginRound,4000,findGame(code));
+                setTimeout(findGame(code).beginRound,6000,findGame(code));
                 i = findGame(code).allPlayers.length + 1;
             }
         }
@@ -596,7 +582,7 @@ function declareWinner(player,code,byFolding) {
         player.currPaidAmt = -1;
     });
     findGame(code).potAmt = 0;
-    checkTrueWinner(code);
+    return player;
 }
 
 function checkTrueWinner(code) {
@@ -609,11 +595,13 @@ function checkTrueWinner(code) {
             wp = p;
         }
     }
-    if(countActivePlayers === 1) {
+    if(countActivePlayers === findGame(code).allPlayers.length - 1) {
         console.log(`${wp.name} is the winner of this game!`);
         findGame(code).message = `${wp.name} is the winner of this game!`;
         setTimeout(findGame(code).endGame, 4000);
+        return true;
     }
+    return false;
 }
 
 /*
@@ -693,6 +681,7 @@ const Hands = {
 
     //Checks if a player has a Straight Flush, returns the value of the highest card in the straight if true
     isStraightFlush : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.groupBySuite(findGame(code).cardsOnBoard.concat(player.cards));
         for(let i = 0; i < allCards.length; i++) {
             if(allCards.at(i).length >= 5) {
@@ -719,6 +708,7 @@ const Hands = {
 
     //Checks if a player has a Flush, returns true if it exists, false if not
     isFlush : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         let suiteCounts = [0,0,0,0];
         const allCards = findGame(code).cardsOnBoard.concat(player.cards);
         for(let c of allCards) {
@@ -739,6 +729,7 @@ const Hands = {
 
     //Checks if a player has a Straight, returns the value of the highest card in the Straight if there
     isStraight : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.removeDuplRanks(findGame(code).cardsOnBoard.concat(player.cards));
         //console.log(allCards);
         for(let i = 0; i < allCards.length; i++) {
@@ -762,6 +753,7 @@ const Hands = {
 
     //Checks if a player has a 4 of a kind, returns the value of the rank if there
     is4s : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
         let countRanks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
         let num4s = 0;
@@ -783,6 +775,7 @@ const Hands = {
 
     //Checks if a player has a Full House, returns a numerical value representative of the strength of the full house
     isFullHouse : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
         let countRanks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
         let num3s = 0; 
@@ -810,6 +803,7 @@ const Hands = {
 
     //Checks if a player has a 3 of a kind, returns the value of its rank if there
     is3s : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
         let countRanks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
         let num3s = 0;
@@ -831,6 +825,7 @@ const Hands = {
 
     //Checks if a player has a 2 pair, returns the value of the rank of the higher pair, if there
     is22s : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
         let countRanks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
         let num2s = 0;
@@ -852,6 +847,7 @@ const Hands = {
 
     //Checks if a player has a pair, returns the value of the rank of the pair, if there
     is2s : function (player,code) {
+        if(findGame(code).cardsOnBoard.concat(player.cards).length != 7) {return false;}
         const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
         let countRanks = [0,0,0,0,0,0,0,0,0,0,0,0,0];
         let num2s = 0;
@@ -975,7 +971,7 @@ const server = http.createServer((req, res) => {
 
         //Adds a player to the game, with a specifc name and amount
         case '/addPlayer' :
-            if(!doesNameExist(url) && !findGame(getCodeFromUrl(url)).hasGameBegun) {
+            if(!doesNameExist(url) && !findGame(getCodeFromUrl(url)).hasGameBegun && findGame(getCodeFromUrl(url)).code != 0) {
                 const pname = findGame(getCodeFromUrl(url)).addPlayer(url);
                 res.setHeader('Set-Cookie',[`code=${getCodeFromUrl(url)}; path=/`,`name=${pname}; path=/`]);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
