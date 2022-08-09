@@ -12,6 +12,7 @@
     "cardsJS": "^1.1.1",
     "core-js": "^3.8.3",
     "js-cookie": "^3.0.1",
+    "serve": "^14.0.1",
     "vue": "^2.6.11",
     "vue-axios": "^3.4.1",
     "vue-playing-card": "^1.0.0",
