@@ -6,7 +6,7 @@ A free to use, online multiplayer poker website. No actual monetary transactions
 
 The home page consists of two sections: single player and multiplayer. In single player, there is exactly one option, the regular single player option. 
 
-### Regular Singleplayer (TODO)
+### Singleplayer (TODO)
 
 In regular singleplayer, there are a certain number of bots (from 1 to 7) to choose from, and when the user gives a valid nickname and presses the create game button, a new single player game will be created. 
 
