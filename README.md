@@ -6,7 +6,7 @@ A free to use, online multiplayer poker website. No actual monetary transactions
 
 The home page consists of two sections: single player and multiplayer. In single player, there is exactly one option, the regular single player option. 
 
-<img src="/assets/home-page.png" alt="Home Page" title="Home Page">
+<img src="/UI/src/assets/home-page.png" alt="Home Page" title="Home Page">
 
 ### Singleplayer (TODO)
 
@@ -24,7 +24,7 @@ When a user inputs their nickname and the correct join code and presses the join
 
 The Game Interface is where the actual poker game is played. The top right corner of the screen has the leave game button and the game code. The title is also displayed, although smaller, as 'Four Ace Poker'. Below the title is the start game button for the creator of the game. 
 
-<img src="/assets/game-page.png" alt="Game Page" title="Game Page">
+<img src="/UI/src/assets/game-page.png" alt="Game Page" title="Game Page">
 
 ### Table Cards
 
