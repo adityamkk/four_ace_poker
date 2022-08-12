@@ -1,0 +1,5 @@
+Server running at http://127.0.0.1:3000/
+2022 8 12; 18:7:8 CST: [9741128] --> New Game Created
+2022 8 12; 18:7:8 CST: [9741128] --> Player "Adit" added to allPlayers.
+2022 8 12; 18:7:33 CST: [9741128] --> Player "Adit" removed from allPlayers.
+2022 8 12; 18:7:33 CST: [9741128] --> Game removed from active games

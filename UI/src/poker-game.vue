@@ -16,21 +16,22 @@
 
     <div style="display:inline-flex; vertical-align:middle">
       <div style="display:inline; vertical-align:middle">
-        <img id="chips" alt="Poker Chips" src="./assets/coin.png" width="140px">
+        <img id="chips" alt="Poker Chips" src="./assets/coin.png" width="110px">
       </div>
 
       <div style="display:inline; vertical-align:middle">
-        <h1 id="potAmt" style="display:block;">${{potAmt}}</h1>
-        <div style="display:block; margin-bottom:3px; padding-bottom:3px">
-          <h2 style="margin-bottom:1px; padding-bottom:1px;">Current Bet: ${{ calledAmt }}</h2>
-          <h2 style="margin-top:1px; padding-top:1px;">Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
+        <h1 id="potAmt" style="display:block; padding-bottom:0px; margin-bottom:0px;">${{potAmt}}</h1>
+        <div style="display:block; margin-top:0px; padding-top:0px; margin-bottom:0px; padding-bottom:3px; vertical-align:middle;">
+          <h2 style="margin-bottom:1px; padding-bottom:1px; padding-top:2px; font-size:15px;">Current Bet: ${{ calledAmt }}</h2>
+          <h2 style="margin-top:1px; padding-top:1px; padding-bottom:2px; font-size:15px;">Blinds: ${{ minBlind/2 }} / ${{ minBlind }}</h2>
         </div>
       </div>
     </div><br>
 
     <h2 id="message" style="text-align:center; display:inline-block">{{message}}</h2><br>
+    <h2 id="messageAmt" style="text-align:center; display:inline-block">{{messageAmt}}</h2><br>
 
-    <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" style="display: inline-block; margin:3%">
+    <div v-for="player in allPlayers" :key="player.id" id="playerList" :data-status="player.hasFolded" :curr-player="isCurrPlayer(player)" :is-bust="isBust(player)" style="display: inline-block; margin:3%">
       <div style="display:inline-flex">
         <img alt="Icon" :src="assignIcon(player)" width="100px" height="100px" class="userIcon" :id="player.id">
         <div>
@@ -67,7 +68,6 @@
     </div>
     -->
   </div>
-  
 </div>
 </template>
 
@@ -95,15 +95,34 @@ export default {
     potAmt : 0,
     gameDeck : {},
     message : '',
+    messageAmt : '',
     timer : '',
     code: -1,
-    hasGameBegun: false
+    hasGameBegun: false,
+    playedSound: false,
+    isThereWinner: false
   }),
   created () {
     this.getGameState();
     this.timer = setInterval(this.getGameState, 1000);
   },
   methods: {
+    playSound (sound) {
+      if(sound) {
+        let audio = new Audio(sound);
+        audio.play();
+      }
+    },
+    playTurnSound() {
+      const vm = this;
+      if(vm.hasGameBegun && vm.isMyTurn() && !vm.playedSound) {
+        vm.playSound(require("./assets/chime-sound.mp3"));
+        vm.playedSound = true;
+      } else if(vm.hasGameBegun && !vm.isMyTurn()) {
+        vm.playedSound = false;
+      }
+      return vm.playedSound;
+    },
     displayCardsOnBoard (cardsOnBoard) {
       cardsOnBoard.forEach(function(card) {
         document.getElementById("cardsOnBoard").innerHTML += `<vue-playing-card signature="${card.rank}${card.suite}"></vue-playing-card>`;
@@ -127,6 +146,9 @@ export default {
       }
       return false;
     },
+    isBust (player) {
+      return player.isBust;
+    },
     isThisPlayer (player) {
       if(Cookie.get("name") === player.name) {
         return true;
@@ -142,7 +164,7 @@ export default {
     },
     isThisPlayerAndMyTurn (player) {
       const vm = this;
-      let displayOptions = ((vm.isThisPlayer(player) && vm.isMyTurn() && vm.hasGameBegun) ? ('yesDisplay') : ('noDisplay'));
+      let displayOptions = ((vm.isThisPlayer(player) && vm.isMyTurn() && vm.hasGameBegun && !vm.isThereWinner) ? ('yesDisplay') : ('noDisplay'));
       return displayOptions;
     },
     assignIcon (player) {
@@ -165,11 +187,12 @@ export default {
     },
     async getGameState () {
       let vm = this;
+      vm.playTurnSound();
       axios.get('/gamestate')
       .then(function (response) {
        // handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         // handle error
@@ -186,7 +209,7 @@ export default {
         //handle success
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -205,7 +228,7 @@ export default {
         router.push('/');
         console.log(response.data);
         document.getElementById('pname').value = '';
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -222,7 +245,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -239,7 +262,7 @@ export default {
         //handle success
         console.log(response.data);
         //console.log(`${vm.allPlayers.at(vm.currPlayer).amt}`);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -256,7 +279,7 @@ export default {
         //handle success
         document.getElementsByClassName('raiseamt').innerHTML = '';
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -272,7 +295,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -288,7 +311,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -304,7 +327,7 @@ export default {
       .then(function (response) {
         //handle success
         console.log(response.data);
-        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, code: vm.code, hasGameBegun: vm.hasGameBegun} = response.data);
+        ({allPlayers: vm.allPlayers, dealerPos: vm.dealerPos, currPlayer: vm.currPlayer, currRound: vm.currRound, cardsOnBoard: vm.cardsOnBoard, minBlind: vm.minBlind, calledAmt: vm.calledAmt, lastRaise: vm.lastRaise, winnerPos: vm.winnerPos, potAmt: vm.potAmt, gameDeck: vm.gameDeck, message: vm.message, messageAmt: vm.messageAmt, code: vm.code, hasGameBegun: vm.hasGameBegun, isThereWinner: vm.isThereWinner} = response.data);
       })
       .catch(function (error) {
         //handle error
@@ -338,7 +361,7 @@ body {
   font-family: 'Stint Ultra Expanded','Montserrat', sans-serif;
   padding:5px;
   margin:0;
-  background-image: url("./assets/felt_table.jpg");
+  background-image: url("./assets/texture.jpg");
 }
 
 button {
@@ -442,10 +465,10 @@ h3:hover {
 #potAmt {
   display:inline-block;
   vertical-align:middle;
-  margin-top:0px;
-  padding-top:0px;
-  padding-bottom:10px;
-  margin-bottom:3px;
+  margin-top:10px;
+  padding-top:3px;
+  padding-bottom:0px;
+  margin-bottom:0px;
 }
 
 #startGame {
@@ -493,8 +516,15 @@ h3:hover {
 #message {
   font-weight:200;
   font-style:oblique;
+  border-color: #ffffff;
   border-style:dotted;
   display:inline-block;
+}
+
+#messageAmt {
+  color:#ff8800;
+  font-weight:400;
+  font-style:oblique;
 }
 
 #playerList {
@@ -512,6 +542,11 @@ h3:hover {
 #playerList[curr-player="true"] {
   background-color:#ff8800;
   border-color: #ff4400;
+}
+
+#playerList[is-bust="true"] {
+  background-color:#777777;
+  border-color: #777777;
 }
 
 #playerName {

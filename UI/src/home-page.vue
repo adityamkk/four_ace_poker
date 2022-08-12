@@ -131,7 +131,7 @@ body {
   font-family: 'Stint Ultra Expanded', sans-serif;
   padding:5px;
   margin:0;
-  background-image: url("./assets/felt_table.jpg");
+  background-image: url("./assets/texture.jpg");
 }
 
 input, button, select {

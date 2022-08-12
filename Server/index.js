@@ -4,10 +4,19 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const urlObject = require('url');
-
+const { Console } = require("console");
 
 const hostname = '127.0.0.1';
 const port = 3000;
+
+/*
+// LOGGER
+*/
+
+const gameLogger = new Console({
+    stdout: fs.createWriteStream("gameLog.txt"),
+    stderr: fs.createWriteStream("gameErrors.txt"),
+});
 
 /*
 // CLASS DEFINITIONS
@@ -28,13 +37,16 @@ class Game {
         this.potAmt = 0; //Amount in the pot
         this.gameDeck = new Deck(); //Deck of Cards used in game
         this.message = '';
+        this.messageAmt = '';
         this.code = code;
         this.hasGameBegun = false;
+        this.isThereWinner = false;
     }
 
+    //Adds a player to the game
     addPlayer (url) {
         this.allPlayers.push(new Player(url.searchParams.get('name'), (url.searchParams.get('amt') != null) ? parseInt(url.searchParams.get('amt')) : 100));
-        console.log(`Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
+        gameLogger.log(`${logHeader(this.code)} Player \"${url.searchParams.get('name')}\" added to allPlayers.`);
         findGame(this.code).message = `${url.searchParams.get('name')} joined the game!`;
         return url.searchParams.get('name');
     }
@@ -45,17 +57,23 @@ class Game {
         for(var i = 0; i < this.allPlayers.length; i++) {
             if(remName === this.allPlayers[i].name) {
                 this.allPlayers.splice(i,1);
-                console.log(`Player \"${remName}\" removed from allPlayers.`);
+                gameLogger.log(`${logHeader(this.code)} Player \"${remName}\" removed from allPlayers.`);
                 findGame(this.code).message = `${remName} left the game`;
                 i = this.allPlayers.length;
             }
+        }
+        if(this.allPlayers.length <= 0) {
+            gameLogger.log(`${logHeader(this.code)} Game removed from active games`);
+            games.delete(this.code);
         }
     }
 
     //Begins a round
     beginRound (game) {
+        game.isThereWinner = false;
         game.hasGameBegun = true;
         game.message = '...';
+        game.messageAmt = '';
         for(var i = 0; i < game.allPlayers.length; i++) {
             game.allPlayers[i].cards = [];
         }
@@ -68,7 +86,6 @@ class Game {
         //game.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
         //
         //small blind
-        console.log(smallBlindPos(game.code));
         updateAmt(game.allPlayers[smallBlindPos(game.code)], ~~(game.minBlind/2)*(-1));
         game.allPlayers[smallBlindPos(game.code)].currPaidAmt = 1;
         updatePot(~~(game.minBlind/2),game.code);
@@ -83,14 +100,14 @@ class Game {
         game.currPlayer = recalPos(bigBlindPos(game.code)+1,game.code);
         game.lastRaise = bigBlindPos(game.code);
 
-        console.log(`Round has started, ${game.allPlayers.at(game.currPlayer).name} is starting`);
+        gameLogger.log(`${logHeader(game.code)} Round has started, ${game.allPlayers.at(game.currPlayer).name} is starting`);
     }
 
     //Has the current player do a specific action
     gameAction (url) {
         const action = url.searchParams.get('action');
         const player = this.allPlayers.at(this.currPlayer);
-        console.log(`${action} is used by the player \"${player.name}\"`);
+        gameLogger.log(`${logHeader(this.code)} ${action} is used by the player \"${player.name}\"`);
         switch(action) {
             case 'call' :
                 call(player,this.code);
@@ -105,7 +122,7 @@ class Game {
                 findGame(this.code).message = `${player.name} folded`;
                 break;
             default:
-                console.log(`Invalid Action ${action}`);
+                gameLogger.error(`${logHeader(this.code)} Invalid Action ${action}`);
         }
         updateRoundStatus(this.code);
         checkFoldConditions(this.code);
@@ -118,8 +135,7 @@ class Game {
         this.allPlayers.at(this.winnerPos).amt += this.potAmt;
         this.potAmt = 0;
         rotateDealerPos(this.code);
-        console.log('Round Has Ended, Next Round Starting');
-        console.log('---------------------------------------------------------------------------------\n');
+        gameLogger.log(`${logHeader(this.code)} Round Has Ended, Next Round Starting\n---------------------------------------------------------------------------------\n`);
     }
 
     //Ends the entire game
@@ -128,18 +144,21 @@ class Game {
         this.currPlayer = 0;
         this.cardsOnBoard = [];
         this.potAmt = 0;
+        this.minBlind = 2;
         this.calledAmt = 2;
         this.currRound = 0;
         this.gameDeck = new Deck();
         this.hasGameBegun = false;
         this.winnerPos = 0;
+        this.hasGameBegun = false;
         resetFoldStatus(this.code);
         for(const p of findGame(this.code).allPlayers) {
             updateAmt(p, 1000-p.amt);
             p.cards = [];
             p.isBust = false;
         }
-        console.log('Game Has Ended');
+        gameLogger.log(`${logHeader(this.code)} Game Has Ended`);
+
     }
 
     returnSecureGame (req) {
@@ -198,9 +217,9 @@ class Player {
         const thisScore = Hands.calcScore(this,code);
         const thatScore = Hands.calcScore(that,code);
         if(arrEquals(thisScore,thatScore)) {
-            if(Hands.calcRawScore(this,code) > Hands.calcRawScore(that,code)) {
+            if(Hands.calcRawScore(this) > Hands.calcRawScore(that)) {
                 return 1;
-            } else if(Hands.calcRawScore(this,code) < Hands.calcRawScore(that,code)) {
+            } else if(Hands.calcRawScore(this) < Hands.calcRawScore(that)) {
                 return -1;
             } else {
                 return 0;
@@ -305,6 +324,12 @@ class Deck {
 // GLOBAL FUNCTIONS
 */
 
+function logHeader(code) {
+    const now = new Date();
+    const timestamp = `${now.getFullYear()} ${now.getMonth()+1} ${now.getDate()}; ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} CST:`;
+    return `${timestamp} [${code}] -->`;
+}
+
 //Checks if the contents of 2 arrays are equal
 //Returns true if the contents are equal, false otherwise
 function arrEquals(arr1, arr2) {
@@ -401,19 +426,19 @@ function updatePot(amt,code) {
 
 //On their turn, has the player do the "call" action, which makes them pay the same amount as the current paid amount
 function call(player,code) {
-    console.log(`${player.name} called $${findGame(code).calledAmt}`);
+    gameLogger.log(`${logHeader(code)} ${player.name} called $${findGame(code).calledAmt}`);
     if(player.currPaidAmt === -1) {player.currPaidAmt = 0;}
     if(findGame(code).calledAmt <= player.amt) {
         updateAmt(player, (-1)*findGame(code).calledAmt + player.currPaidAmt);
         updatePot(findGame(code).calledAmt - player.currPaidAmt,code);
-        console.log(`updated amount: $${findGame(code).calledAmt - player.currPaidAmt}`);
+        gameLogger.log(`${logHeader(code)} updated amount: $${findGame(code).calledAmt - player.currPaidAmt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return findGame(code).calledAmt;
     } else {
         updateAmt(player, (-1)*player.amt + player.currPaidAmt);
         updatePot(player.amt - player.currPaidAmt,code);
-        console.log(`updated amount: $${player.amt - player.currPaidAmt}`);
+        gameLogger.log(`${logHeader(code)} updated amount: $${player.amt - player.currPaidAmt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return player.amt;
@@ -422,12 +447,12 @@ function call(player,code) {
 
 //On their turn, has the player do the "raise" action, which makes them pay a certain specified amount, as long as it is greater than the standard
 function raise(player, amt,code) {
-    console.log(`${player.name} raised $${amt}`);
+    gameLogger.log(`${logHeader(code)} ${player.name} raised $${amt}`);
     if(amt >= findGame(code).calledAmt && amt > findGame(code).minBlind && amt <= player.amt) {
         findGame(code).calledAmt = amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
-        console.log(`updated amount: $${amt}`);
+        gameLogger.log(`${logHeader(code)} updated amount: $${amt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
@@ -436,7 +461,7 @@ function raise(player, amt,code) {
         findGame(code).calledAmt += amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
-        console.log(`updated amount: $${amt}`);
+        gameLogger.log(`${logHeader(code)} updated amount: $${amt}`);
         player.currPaidAmt = amt;
         rotateCurrPos(code);
         return amt;
@@ -444,12 +469,12 @@ function raise(player, amt,code) {
         amt = player.amt;
         updateAmt(player, (-1)*amt);
         updatePot(amt , code);
-        console.log(`updated amount: $${amt}`);
+        gameLogger.log(`${logHeader(code)} updated amount: $${amt}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
         return amt;
     } else {
-        console.log('Try Again');
+        gameLogger.log(`${logHeader(code)} Invalid Amount`);
         return ' an invalid amount, try again';
     }
 }
@@ -459,7 +484,6 @@ function raise(player, amt,code) {
 function fold(player,code) {
     player.hasFolded = true;
     rotateCurrPos(code);
-    checkFoldConditions(code);
 }
 
 //Updates the round status and checks if bets have been equalized
@@ -479,7 +503,6 @@ function updateRoundStatus(code) {
     if(areEqualized) {
         startNewRound(code);
     }
-    console.log('---------------------');
 }
 
 //Prepares for the start of a new round, recalibrates current player, and updates the type of round
@@ -495,19 +518,19 @@ function startNewRound(code) {
     //console.log(`Current Round: ${findGame().currRound}`)
     switch(findGame(code).currRound) {
         case 1: for(let i = 0; i < 3; i++) {showCard(code);}
-                console.log(`3 cards shown (flop)`);
+                gameLogger.log(`${logHeader(code)} 3 cards shown (flop)`);
                 findGame(code).message = '...';
                 break;
         case 2: showCard(code);
-                console.log(`1 card shown (turn)`);
+                gameLogger.log(`${logHeader(code)} 1 card shown (turn)`);
                 break;
         case 3: showCard(code);
-                console.log(`1 card shown (river)`);
+                gameLogger.log(`${logHeader(code)} 1 card shown (river)`);
                 break;
-        case 4: console.log(`Last round over, time for the showdown!`);
-                const isThereWinner = findGame(code).endRound(false);
-                if(isThereWinner) {return;}
+        case 4: gameLogger.log(`${logHeader(code)} Last round over, time for the showdown!`);
+                findGame(code).endRound(false);
                 checkIfBust(code);
+                findGame(code).isThereWinner = true;
                 const winner = checkTrueWinner(code);
                 if(winner) {return;}
                 setTimeout(findGame(code).beginRound,7000,findGame(code));
@@ -525,12 +548,15 @@ function checkFoldConditions(code) {
         for(let i = 0; i < findGame(code).allPlayers.length; i++) {
             if(findGame(code).allPlayers[i].hasFolded === false) {
                 findGame(code).winnerPos = i;
-                console.log(`Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
+                gameLogger.log(`${logHeader(code)} Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
                 findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
                 findGame(code).endRound(true);
                 checkIfBust(code);
+                findGame(code).isThereWinner = true;
+                const winner = checkTrueWinner(code);
+                if(winner) {return;}
                 setTimeout(findGame(code).beginRound,6000,findGame(code));
-                i = findGame(code).allPlayers.length + 1;
+                return;
             }
         }
     }
@@ -573,12 +599,13 @@ function findWinner(code,byFolding) {
 //Gives the entire amount in the pot to the winning player
 function declareWinner(player,code,byFolding) {
     if(byFolding) {
-        console.log(`${player.name} won the round since everyone else folded!`);
+        gameLogger.log(`${logHeader(code)} ${player.name} won the round since everyone else folded! ${player.name} won \$${findGame(code).potAmt}`);
         findGame(code).message = `${player.name} won the round since everyone else folded!`;
     } else {
-        console.log(`${player.name} won the round with a ${player.handType(code)}!`);
+        gameLogger.log(`${logHeader(code)} ${player.name} won the round with a ${player.handType(code)}! ${player.name} won \$${findGame(code).potAmt}`);
         findGame(code).message = `${player.name} won the round with a ${player.handType(code)}!`;
     }
+    findGame(code).messageAmt = `${player.name} won \$${findGame(code).potAmt}`;
     updateAmt(player, (findGame(code).potAmt));
     findGame(code).allPlayers.forEach(function(player) {
         player.currPaidAmt = -1;
@@ -598,7 +625,7 @@ function checkTrueWinner(code) {
         }
     }
     if(countActivePlayers === findGame(code).allPlayers.length - 1) {
-        console.log(`${wp.name} is the winner of this game!`);
+        gameLogger.log(`${logHeader(code)} ${wp.name} is the winner of this game!`);
         findGame(code).message = `${wp.name} is the winner of this game!`;
         setTimeout(findGame(code).endGame, 4000);
         return true;
@@ -871,19 +898,19 @@ const Hands = {
 
     //Returns an array of the results from all the functions above for a specific player
     calcScore : function (player,code) {
-        //const allCards = this.sortByRank(findGame().cardsOnBoard.concat(player.cards));
         let scoreArr = [this.isStraightFlush(player,code),this.is4s(player,code),this.isFullHouse(player,code),this.isFlush(player,code),this.isStraight(player,code),this.is3s(player,code),this.is22s(player,code),this.is2s(player,code)];
         return scoreArr;
     },
 
     //Returns the sum of the numerical values of all the cards in the hand
-    calcRawScore : function (player,code) {
-        const allCards = this.sortByRank(findGame(code).cardsOnBoard.concat(player.cards));
-        let score = 0;
-        for(let c of allCards) {
-            score += this.rankToNum(c.rank);
-        } 
-        return score;
+    calcRawScore : function (player) {
+        const card1 = this.rankToNum(player.cards.at(0).rank);
+        const card2 = this.rankToNum(player.cards.at(1).rank);
+        if(card1 > card2) {
+            return card1*100 + card2;
+        } else {
+            return card2*100 + card1;
+        }
     }
 }
 
@@ -912,8 +939,8 @@ function newMultiGame(url) {
         code = Math.floor(Math.random()*10000000);
     }
     games.set(code, new Game(code));
+    gameLogger.log(`${logHeader(code)} New Game Created`);
     const name = findGame(code).addPlayer(url);
-    console.log(name);
     return [code,name];
 }
 
@@ -1098,6 +1125,6 @@ const server = http.createServer((req, res) => {
 
 //Server Listen
 server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+  gameLogger.log(`Server running at http://${hostname}:${port}/`);
 });
 
