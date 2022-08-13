@@ -129,6 +129,9 @@ export default {
       });
     },
     getCard (card) {
+      if(card === undefined || card === null) {
+        return '';
+      }
       const rank = (card.rank === '10') ? ('t') : (card.rank.toLowerCase());
       return '' + rank + card.suite.toLowerCase();
     },
@@ -536,17 +539,14 @@ h3:hover {
 
 #playerList[data-status="true"] {
   background-color: #5DADE2;
-  border-color: #5DADE2;
 }
 
 #playerList[curr-player="true"] {
   background-color:#ff8800;
-  border-color: #ff4400;
 }
 
 #playerList[is-bust="true"] {
   background-color:#777777;
-  border-color: #777777;
 }
 
 #playerName {

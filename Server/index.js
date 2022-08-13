@@ -6,7 +6,7 @@ const path = require('path');
 const urlObject = require('url');
 const { Console } = require("console");
 
-const hostname = '127.0.0.1';
+const hostname = '0.0.0.0';
 const port = 3000;
 
 /*
@@ -86,13 +86,15 @@ class Game {
         //game.cardsOnBoard = [new Card('A','H'), new Card('5','D'), new Card('4','C'), new Card('2','S'), new Card('3','H')];
         //
         //small blind
-        updateAmt(game.allPlayers[smallBlindPos(game.code)], ~~(game.minBlind/2)*(-1));
-        game.allPlayers[smallBlindPos(game.code)].currPaidAmt = 1;
-        updatePot(~~(game.minBlind/2),game.code);
+        const amtPayableSmall = (~~(game.minBlind/2) < game.allPlayers.at(smallBlindPos(game.code)).amt ? ~~(game.minBlind/2) : game.allPlayers.at(bigBlindPos(game.code)).amt)
+        updateAmt(game.allPlayers.at(smallBlindPos(game.code)), amtPayableSmall*(-1));
+        game.allPlayers[smallBlindPos(game.code)].currPaidAmt = amtPayableSmall;
+        updatePot(amtPayableSmall,game.code);
         //big blind
-        updateAmt(game.allPlayers[bigBlindPos(game.code)], game.minBlind*(-1));
-        game.allPlayers[bigBlindPos(game.code)].currPaidAmt = 2;
-        updatePot(game.minBlind,game.code);
+        const amtPayableBig = (game.minBlind < game.allPlayers.at(bigBlindPos(game.code)).amt ? game.minBlind : game.allPlayers.at(bigBlindPos(game.code)).amt);
+        updateAmt(game.allPlayers.at(bigBlindPos(game.code)), amtPayableBig*(-1));
+        game.allPlayers[bigBlindPos(game.code)].currPaidAmt = amtPayableBig;
+        updatePot(amtPayableBig,game.code);
         //deal cards
         for(var i = 0; i < game.allPlayers.length; i++) {
             game.gameDeck.deal(game.allPlayers[i],2);
@@ -132,18 +134,19 @@ class Game {
     endRound (byFolding) {
         findWinner(this.code,byFolding);
         this.gameDeck = new Deck();
-        this.allPlayers.at(this.winnerPos).amt += this.potAmt;
-        this.potAmt = 0;
+        //this.allPlayers.at(this.winnerPos).amt += this.potAmt;
         rotateDealerPos(this.code);
         gameLogger.log(`${logHeader(this.code)} Round Has Ended, Next Round Starting\n---------------------------------------------------------------------------------\n`);
     }
 
-    //Ends the entire game
+    //Ends the entire game TODO: find why this seems to create a new Game
     endGame () {
+        //const lastAmt = this.potAmt;
+        //updateAmt(findGame(this.code).allPlayers.at(this.winnerPos), lastAmt);
+        //updatePot(lastAmt, this.code);
         this.dealerPos = 0;
         this.currPlayer = 0;
         this.cardsOnBoard = [];
-        this.potAmt = 0;
         this.minBlind = 2;
         this.calledAmt = 2;
         this.currRound = 0;
@@ -153,7 +156,7 @@ class Game {
         this.hasGameBegun = false;
         resetFoldStatus(this.code);
         for(const p of findGame(this.code).allPlayers) {
-            updateAmt(p, 1000-p.amt);
+            updateAmt(p, 100-p.amt);
             p.cards = [];
             p.isBust = false;
         }
@@ -436,12 +439,13 @@ function call(player,code) {
         rotateCurrPos(code);
         return findGame(code).calledAmt;
     } else {
-        updateAmt(player, (-1)*player.amt + player.currPaidAmt);
-        updatePot(player.amt - player.currPaidAmt,code);
-        gameLogger.log(`${logHeader(code)} updated amount: $${player.amt - player.currPaidAmt}`);
+        const amtCall = player.amt;
+        updateAmt(player, (-1)*amtCall);
+        updatePot(amtCall,code);
+        gameLogger.log(`${logHeader(code)} updated amount: $${amtCall}`);
         player.currPaidAmt = findGame(code).calledAmt;
         rotateCurrPos(code);
-        return player.amt;
+        return amtCall;
     }
 }
 
@@ -530,9 +534,11 @@ function startNewRound(code) {
         case 4: gameLogger.log(`${logHeader(code)} Last round over, time for the showdown!`);
                 findGame(code).endRound(false);
                 checkIfBust(code);
-                findGame(code).isThereWinner = true;
-                const winner = checkTrueWinner(code);
-                if(winner) {return;}
+                let numActivePlayers = findGame(code).allPlayers.length;
+                findGame(code).allPlayers.forEach(function(p) {
+                    if(p.isBust) {numActivePlayers--;}
+                });
+                if(numActivePlayers <= 1) {return;}
                 setTimeout(findGame(code).beginRound,7000,findGame(code));
     }
 }
@@ -542,14 +548,14 @@ function startNewRound(code) {
 function checkFoldConditions(code) {
     let countRemPlayers = findGame(code).allPlayers.length;
     for(const p of findGame(code).allPlayers) {
-        if(p.hasFolded === true || p.isBust) {countRemPlayers--;}
+        if(p.hasFolded || p.isBust) {countRemPlayers--;}
     }
     if(countRemPlayers === 1) {
         for(let i = 0; i < findGame(code).allPlayers.length; i++) {
             if(findGame(code).allPlayers[i].hasFolded === false) {
                 findGame(code).winnerPos = i;
-                gameLogger.log(`${logHeader(code)} Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
-                findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
+                //gameLogger.log(`${logHeader(code)} Everyone except ${findGame(code).allPlayers.at(findGame(code).winnerPos).name} folded!`);
+                //findGame(code).message = `${findGame(code).allPlayers.at(findGame(code).winnerPos).name} won since everyone else folded!`;
                 findGame(code).endRound(true);
                 checkIfBust(code);
                 findGame(code).isThereWinner = true;
@@ -606,27 +612,36 @@ function declareWinner(player,code,byFolding) {
         findGame(code).message = `${player.name} won the round with a ${player.handType(code)}!`;
     }
     findGame(code).messageAmt = `${player.name} won \$${findGame(code).potAmt}`;
-    updateAmt(player, (findGame(code).potAmt));
+    let numActivePlayers = findGame(code).allPlayers.length;
+    findGame(code).allPlayers.forEach(function(p) {
+        if(p.isBust) {numActivePlayers--;}
+    });
+    if(numActivePlayers <= 1) {findGame(code).messageAmt = ``;}
+    const lastAmt = findGame(code).potAmt;
+    updateAmt(player, lastAmt);
+    updatePot(lastAmt*(-1), code);
     findGame(code).allPlayers.forEach(function(player) {
         player.currPaidAmt = -1;
     });
-    findGame(code).potAmt = 0;
     return player;
 }
 
 function checkTrueWinner(code) {
     let countActivePlayers = 0;
     let wp = '';
-    for(const p of findGame(code).allPlayers) {
+    let wpPos = -1;
+    findGame(code).allPlayers.forEach(function(p, i) {
         if(p.isBust) {
             countActivePlayers++;
         } else {
             wp = p;
+            wpPos = i;
         }
-    }
-    if(countActivePlayers === findGame(code).allPlayers.length - 1) {
+    });
+    if(countActivePlayers >= findGame(code).allPlayers.length - 1) {
         gameLogger.log(`${logHeader(code)} ${wp.name} is the winner of this game!`);
-        findGame(code).message = `${wp.name} is the winner of this game!`;
+        findGame(code).message = `${wp.name} WON THE GAME!`;
+        findGame(code).winnerPos = wpPos;
         setTimeout(findGame(code).endGame, 4000);
         return true;
     }
